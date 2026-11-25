@@ -12,9 +12,12 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fis_ledger}
     username: ${SPRING_DATASOURCE_USERNAME:fis_user}
     password: ${SPRING_DATASOURCE_PASSWORD:fis_password}
+  sql:
+    init:
+      mode: always # Ejecuta schema.sql en cada arranque
   jpa:
     hibernate:
-      ddl-auto: update # Crea y actualiza tablas automáticamente sin migraciones
+      ddl-auto: none # El esquema lo manda schema.sql, no Hibernate
     open-in-view: false
     properties:
       hibernate:

@@ -1,0 +1,2161 @@
+{
+  "_meta": {
+    "spec": "SPEC_reto1_v1.md",
+    "note": "Synthetic data. Every hash and signature in this file is real and verifiable with the SPEC formats.",
+    "scope": "UK only: tokenised sterling deposits between UK banks (cross-border / SWIFT = future work)",
+    "scenario": "seed -> GREEN Brightwater -> BEC Acme HELD -> attacker self-authorisation BLOCKED -> legit Acme rotation RELEASED -> Kestrel expiry REVERTED -> retry to flagged wallet BLOCKED -> compliance tightens velocity -> Kestrel HELD"
+  },
+  "state": {
+    "request": {
+      "method": "GET",
+      "path": "/api/state"
+    },
+    "status": 200,
+    "body": {
+      "serverTime": "2026-11-25T21:06:30.000Z",
+      "payer": {
+        "partyId": "NORTHWIND",
+        "legalName": "Northwind Manufacturing plc",
+        "wallet": "tdgb:northwind:treasury",
+        "balance": "935350.00",
+        "currency": "GBPT"
+      },
+      "ledger": {
+        "currency": "GBPT",
+        "totalSupply": "1000000.00",
+        "payerBalance": "935350.00",
+        "inEscrow": "7250.00",
+        "supplierBalances": "57400.00",
+        "conserved": true
+      },
+      "metrics": {
+        "protectedAmount": "125000.00",
+        "protectedCount": 3,
+        "byStatus": {
+          "SETTLED": 1,
+          "HELD": 1,
+          "RELEASED": 1,
+          "REVERTED": 1,
+          "BLOCKED": 2
+        }
+      },
+      "suppliers": [
+        {
+          "partyId": "ACME",
+          "legalName": "Acme Components Ltd",
+          "trustedWallet": "tdgb:acme:op-02",
+          "kyb": {
+            "verified": true,
+            "country": "GB",
+            "bank": "Albion Bank (sim)",
+            "companyNo": "SIM-03920154"
+          }
+        },
+        {
+          "partyId": "BRIGHTWATER",
+          "legalName": "Brightwater Logistics Ltd",
+          "trustedWallet": "tdgb:brightwater:main",
+          "kyb": {
+            "verified": true,
+            "country": "GB",
+            "bank": "Thames Bank (sim)",
+            "companyNo": "SIM-07733019"
+          }
+        },
+        {
+          "partyId": "KESTREL",
+          "legalName": "Kestrel Packaging Ltd",
+          "trustedWallet": "tdgb:kestrel:main",
+          "kyb": {
+            "verified": true,
+            "country": "GB",
+            "bank": "Albion Bank (sim)",
+            "companyNo": "SIM-05512840"
+          }
+        }
+      ],
+      "wallets": [
+        {
+          "address": "tdgb:northwind:treasury",
+          "partyId": "NORTHWIND",
+          "ownerName": "Northwind Manufacturing plc",
+          "bank": "Thames Bank (sim)",
+          "status": "TRUSTED",
+          "balance": "935350.00",
+          "kybVerified": true,
+          "label": "Northwind treasury",
+          "flagReason": null,
+          "rotatedFrom": null,
+          "rotatedTo": null
+        },
+        {
+          "address": "tdgb:acme:op-01",
+          "partyId": "ACME",
+          "ownerName": "Acme Components Ltd",
+          "bank": "Albion Bank (sim)",
+          "status": "ROTATED",
+          "balance": "0.00",
+          "kybVerified": true,
+          "label": "Acme operating account",
+          "flagReason": null,
+          "rotatedFrom": null,
+          "rotatedTo": "tdgb:acme:op-02"
+        },
+        {
+          "address": "tdgb:acme:op-02",
+          "partyId": "ACME",
+          "ownerName": "Acme Components Ltd",
+          "bank": "Mercia Bank (sim)",
+          "status": "TRUSTED",
+          "balance": "45000.00",
+          "kybVerified": true,
+          "label": "Acme new operating account",
+          "flagReason": null,
+          "rotatedFrom": "tdgb:acme:op-01",
+          "rotatedTo": null
+        },
+        {
+          "address": "tdgb:acmetrading:7731",
+          "partyId": "ACME_TRADING",
+          "ownerName": "Acme Trading Ltd",
+          "bank": "Severn Bank (sim)",
+          "status": "FLAGGED",
+          "balance": "0.00",
+          "kybVerified": true,
+          "label": "Acme Trading collections",
+          "flagReason": "Self-authorisation attempt on PAY-0003",
+          "rotatedFrom": null,
+          "rotatedTo": null
+        },
+        {
+          "address": "tdgb:brightwater:main",
+          "partyId": "BRIGHTWATER",
+          "ownerName": "Brightwater Logistics Ltd",
+          "bank": "Thames Bank (sim)",
+          "status": "TRUSTED",
+          "balance": "12400.00",
+          "kybVerified": true,
+          "label": "Brightwater receivables",
+          "flagReason": null,
+          "rotatedFrom": null,
+          "rotatedTo": null
+        },
+        {
+          "address": "tdgb:kestrel:main",
+          "partyId": "KESTREL",
+          "ownerName": "Kestrel Packaging Ltd",
+          "bank": "Albion Bank (sim)",
+          "status": "TRUSTED",
+          "balance": "0.00",
+          "kybVerified": true,
+          "label": "Kestrel receivables",
+          "flagReason": null,
+          "rotatedFrom": null,
+          "rotatedTo": null
+        },
+        {
+          "address": "tdgb:kestrel:new-19",
+          "partyId": "KESTREL",
+          "ownerName": "Kestrel Packaging Ltd",
+          "bank": "Severn Bank (sim)",
+          "status": "UNVERIFIED",
+          "balance": "0.00",
+          "kybVerified": true,
+          "label": "Kestrel new account (unconfirmed)",
+          "flagReason": null,
+          "rotatedFrom": null,
+          "rotatedTo": null
+        },
+        {
+          "address": "tdgb:orion:01",
+          "partyId": "ORION",
+          "ownerName": "Orion Global Trade Ltd",
+          "bank": "Severn Bank (sim)",
+          "status": "FLAGGED",
+          "balance": "0.00",
+          "kybVerified": true,
+          "label": "Orion settlement",
+          "flagReason": "UK sanctions list (OFSI, simulated)",
+          "rotatedFrom": null,
+          "rotatedTo": null
+        }
+      ],
+      "payments": [
+        {
+          "id": 6,
+          "ref": "PAY-0006",
+          "supplierId": "KESTREL",
+          "supplierName": "Kestrel Packaging Ltd",
+          "payeeWallet": "tdgb:kestrel:new-19",
+          "payeeWalletStatus": "UNVERIFIED",
+          "payeeWalletOwner": "Kestrel Packaging Ltd",
+          "payeeKybVerified": true,
+          "amount": "7250.00",
+          "currency": "GBPT",
+          "invoiceRef": "INV-KP-0901",
+          "status": "HELD",
+          "decision": {
+            "outcome": "HOLD",
+            "evaluatedAt": "2026-11-25T21:06:02.418Z",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "name": "Risk list screening",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "Destination wallet is not on the risk list.",
+                "evidence": {}
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "name": "Unverified-wallet velocity",
+                "result": "PASS",
+                "ruleVersion": 2,
+                "message": "1 of 2 allowed payment attempts to unverified wallets for Kestrel Packaging Ltd in the last 30 min.",
+                "evidence": {
+                  "attempts": 1,
+                  "maxAttempts": 2,
+                  "windowMinutes": 30
+                }
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "name": "Key-rotation escrow",
+                "result": "HOLD",
+                "ruleVersion": 1,
+                "message": "Destination wallet tdgb:kestrel:new-19 (owner: Kestrel Packaging Ltd, KYB verified) is not Kestrel Packaging Ltd's registered wallet tdgb:kestrel:main. Funds locked in escrow until Kestrel Packaging Ltd authorises the change with its registered key. Automatic return at 23:06 UTC.",
+                "evidence": {
+                  "trustedWallet": "tdgb:kestrel:main",
+                  "requestedWallet": "tdgb:kestrel:new-19",
+                  "requestedWalletOwner": "Kestrel Packaging Ltd",
+                  "requestedWalletKybVerified": true
+                }
+              }
+            ]
+          },
+          "escrow": {
+            "trustedWallet": "tdgb:kestrel:main",
+            "trustedPublicKey": "MCowBQYDK2VwAyEArijSsx6knzPdnIs//lxxxqsk3r6QeYkjGq90wmqxGUo=",
+            "requestedWallet": "tdgb:kestrel:new-19",
+            "challenge": "FIS-KEYROT-v1\npayment=6\nsupplier=KESTREL\ntrustedWallet=tdgb:kestrel:main\nrequestedWallet=tdgb:kestrel:new-19\namount=7250.00\ncurrency=GBPT\nnonce=NR0-q9Rn03pYlcfD5Wqe-Q\nexpiresAt=2026-11-25T23:06:02Z",
+            "challengeSha256": "0c566c656de05d6a09635ec7ee2da7a047e6bc043bbfb913fa0b109ab7487a7b",
+            "expiresAt": "2026-11-25T23:06:02.000Z",
+            "maxInvalidAttempts": 3,
+            "attempts": [
+              {
+                "at": "2026-11-25T21:06:20.133Z",
+                "result": "INVALID",
+                "signerPublicKey": null,
+                "message": "Signature does not match Kestrel Packaging Ltd's registered key for this exact challenge. Invalid attempt 1 of 3."
+              }
+            ],
+            "resolution": null
+          },
+          "createdAt": "2026-11-25T21:06:02.418Z",
+          "resolvedAt": null
+        },
+        {
+          "id": 5,
+          "ref": "PAY-0005",
+          "supplierId": "ACME",
+          "supplierName": "Acme Components Ltd",
+          "payeeWallet": "tdgb:acmetrading:7731",
+          "payeeWalletStatus": "FLAGGED",
+          "payeeWalletOwner": "Acme Trading Ltd",
+          "payeeKybVerified": true,
+          "amount": "30000.00",
+          "currency": "GBPT",
+          "invoiceRef": "INV-AC-1160",
+          "status": "BLOCKED",
+          "decision": {
+            "outcome": "BLOCK",
+            "evaluatedAt": "2026-11-25T21:05:10.004Z",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "name": "Risk list screening",
+                "result": "BLOCK",
+                "ruleVersion": 1,
+                "message": "Destination wallet tdgb:acmetrading:7731 is on the risk list (Self-authorisation attempt on PAY-0003). Blocked: no funds moved.",
+                "evidence": {
+                  "wallet": "tdgb:acmetrading:7731",
+                  "flagReason": "Self-authorisation attempt on PAY-0003"
+                }
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "name": "Unverified-wallet velocity",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "3 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+                "evidence": {
+                  "attempts": 3,
+                  "maxAttempts": 3,
+                  "windowMinutes": 30
+                }
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "name": "Key-rotation escrow",
+                "result": "HOLD",
+                "ruleVersion": 1,
+                "message": "Destination wallet tdgb:acmetrading:7731 (owner: Acme Trading Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-02. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:05 UTC.",
+                "evidence": {
+                  "trustedWallet": "tdgb:acme:op-02",
+                  "requestedWallet": "tdgb:acmetrading:7731",
+                  "requestedWalletOwner": "Acme Trading Ltd",
+                  "requestedWalletKybVerified": true
+                }
+              }
+            ]
+          },
+          "escrow": null,
+          "createdAt": "2026-11-25T21:05:10.004Z",
+          "resolvedAt": "2026-11-25T21:05:10.004Z"
+        },
+        {
+          "id": 4,
+          "ref": "PAY-0004",
+          "supplierId": "ACME",
+          "supplierName": "Acme Components Ltd",
+          "payeeWallet": "tdgb:acme:op-02",
+          "payeeWalletStatus": "TRUSTED",
+          "payeeWalletOwner": "Acme Components Ltd",
+          "payeeKybVerified": true,
+          "amount": "45000.00",
+          "currency": "GBPT",
+          "invoiceRef": "INV-AC-1152",
+          "status": "RELEASED",
+          "decision": {
+            "outcome": "HOLD",
+            "evaluatedAt": "2026-11-25T21:03:52.310Z",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "name": "Risk list screening",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "Destination wallet is not on the risk list.",
+                "evidence": {}
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "name": "Unverified-wallet velocity",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "2 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+                "evidence": {
+                  "attempts": 2,
+                  "maxAttempts": 3,
+                  "windowMinutes": 30
+                }
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "name": "Key-rotation escrow",
+                "result": "HOLD",
+                "ruleVersion": 1,
+                "message": "Destination wallet tdgb:acme:op-02 (owner: Acme Components Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-01. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:03 UTC.",
+                "evidence": {
+                  "trustedWallet": "tdgb:acme:op-01",
+                  "requestedWallet": "tdgb:acme:op-02",
+                  "requestedWalletOwner": "Acme Components Ltd",
+                  "requestedWalletKybVerified": true
+                }
+              }
+            ]
+          },
+          "escrow": {
+            "trustedWallet": "tdgb:acme:op-01",
+            "trustedPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+            "requestedWallet": "tdgb:acme:op-02",
+            "challenge": "FIS-KEYROT-v1\npayment=4\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acme:op-02\namount=45000.00\ncurrency=GBPT\nnonce=ceR3CbuAaYUN845l1b56Lg\nexpiresAt=2026-11-25T23:03:52Z",
+            "challengeSha256": "698e8e0eef7c73b983351875b1a2729fef6c9ad5249bd6691d08e0e8708b5778",
+            "expiresAt": "2026-11-25T23:03:52.000Z",
+            "maxInvalidAttempts": 3,
+            "attempts": [
+              {
+                "at": "2026-11-25T21:04:20.611Z",
+                "result": "VALID",
+                "signerPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+                "message": "Signature verified with Acme Components Ltd's registered key (tdgb:acme:op-01). Wallet change authorised."
+              }
+            ],
+            "resolution": {
+              "type": "RELEASED_KEY_ROTATION",
+              "at": "2026-11-25T21:04:20.611Z",
+              "message": "Funds released to tdgb:acme:op-02. It is now Acme Components Ltd's registered wallet; tdgb:acme:op-01 retired."
+            }
+          },
+          "createdAt": "2026-11-25T21:03:52.310Z",
+          "resolvedAt": "2026-11-25T21:04:20.611Z"
+        },
+        {
+          "id": 3,
+          "ref": "PAY-0003",
+          "supplierId": "ACME",
+          "supplierName": "Acme Components Ltd",
+          "payeeWallet": "tdgb:acmetrading:7731",
+          "payeeWalletStatus": "FLAGGED",
+          "payeeWalletOwner": "Acme Trading Ltd",
+          "payeeKybVerified": true,
+          "amount": "80000.00",
+          "currency": "GBPT",
+          "invoiceRef": "INV-AC-1147",
+          "status": "BLOCKED",
+          "decision": {
+            "outcome": "HOLD",
+            "evaluatedAt": "2026-11-25T21:02:41.530Z",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "name": "Risk list screening",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "Destination wallet is not on the risk list.",
+                "evidence": {}
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "name": "Unverified-wallet velocity",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "1 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+                "evidence": {
+                  "attempts": 1,
+                  "maxAttempts": 3,
+                  "windowMinutes": 30
+                }
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "name": "Key-rotation escrow",
+                "result": "HOLD",
+                "ruleVersion": 1,
+                "message": "Destination wallet tdgb:acmetrading:7731 (owner: Acme Trading Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-01. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:02 UTC.",
+                "evidence": {
+                  "trustedWallet": "tdgb:acme:op-01",
+                  "requestedWallet": "tdgb:acmetrading:7731",
+                  "requestedWalletOwner": "Acme Trading Ltd",
+                  "requestedWalletKybVerified": true
+                }
+              }
+            ]
+          },
+          "escrow": {
+            "trustedWallet": "tdgb:acme:op-01",
+            "trustedPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+            "requestedWallet": "tdgb:acmetrading:7731",
+            "challenge": "FIS-KEYROT-v1\npayment=3\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acmetrading:7731\namount=80000.00\ncurrency=GBPT\nnonce=NtDhc-ngjY_IWbQ-3sgf8Q\nexpiresAt=2026-11-25T23:02:41Z",
+            "challengeSha256": "0fe51b688f39b42da2542c59dcebfa3c5a13a868df9850102bf701ee282a4911",
+            "expiresAt": "2026-11-25T23:02:41.000Z",
+            "maxInvalidAttempts": 3,
+            "attempts": [
+              {
+                "at": "2026-11-25T21:03:15.044Z",
+                "result": "SELF_AUTHORISATION",
+                "signerPublicKey": "MCowBQYDK2VwAyEA4hXWmAYvOB3LebUIaZcq0xiKs7VPUYOlRXLS97cy/hc=",
+                "message": "Signature is valid, but it was produced with the key of the wallet requesting the funds (tdgb:acmetrading:7731), not with Acme Components Ltd's registered key. A wallet cannot authorise itself."
+              }
+            ],
+            "resolution": {
+              "type": "BLOCKED_SELF_AUTHORISATION",
+              "at": "2026-11-25T21:03:15.044Z",
+              "message": "Payment blocked. 80,000.00 GBPT returned to treasury; tdgb:acmetrading:7731 added to the risk list."
+            }
+          },
+          "createdAt": "2026-11-25T21:02:41.530Z",
+          "resolvedAt": "2026-11-25T21:03:15.044Z"
+        },
+        {
+          "id": 2,
+          "ref": "PAY-0002",
+          "supplierId": "BRIGHTWATER",
+          "supplierName": "Brightwater Logistics Ltd",
+          "payeeWallet": "tdgb:brightwater:main",
+          "payeeWalletStatus": "TRUSTED",
+          "payeeWalletOwner": "Brightwater Logistics Ltd",
+          "payeeKybVerified": true,
+          "amount": "12400.00",
+          "currency": "GBPT",
+          "invoiceRef": "INV-BW-2231",
+          "status": "SETTLED",
+          "decision": {
+            "outcome": "APPROVE",
+            "evaluatedAt": "2026-11-25T21:02:10.120Z",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "name": "Risk list screening",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "Destination wallet is not on the risk list.",
+                "evidence": {}
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "name": "Unverified-wallet velocity",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "0 of 3 allowed payment attempts to unverified wallets for Brightwater Logistics Ltd in the last 30 min.",
+                "evidence": {
+                  "attempts": 0,
+                  "maxAttempts": 3,
+                  "windowMinutes": 30
+                }
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "name": "Key-rotation escrow",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "Destination is Brightwater Logistics Ltd's registered wallet.",
+                "evidence": {
+                  "trustedWallet": "tdgb:brightwater:main"
+                }
+              }
+            ]
+          },
+          "escrow": null,
+          "createdAt": "2026-11-25T21:02:10.120Z",
+          "resolvedAt": "2026-11-25T21:02:10.120Z"
+        },
+        {
+          "id": 1,
+          "ref": "PAY-0001",
+          "supplierId": "KESTREL",
+          "supplierName": "Kestrel Packaging Ltd",
+          "payeeWallet": "tdgb:kestrel:new-19",
+          "payeeWalletStatus": "UNVERIFIED",
+          "payeeWalletOwner": "Kestrel Packaging Ltd",
+          "payeeKybVerified": true,
+          "amount": "15000.00",
+          "currency": "GBPT",
+          "invoiceRef": "INV-KP-0877",
+          "status": "REVERTED",
+          "decision": {
+            "outcome": "HOLD",
+            "evaluatedAt": "2026-11-25T20:00:00.250Z",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "name": "Risk list screening",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "Destination wallet is not on the risk list.",
+                "evidence": {}
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "name": "Unverified-wallet velocity",
+                "result": "PASS",
+                "ruleVersion": 1,
+                "message": "1 of 3 allowed payment attempts to unverified wallets for Kestrel Packaging Ltd in the last 30 min.",
+                "evidence": {
+                  "attempts": 1,
+                  "maxAttempts": 3,
+                  "windowMinutes": 30
+                }
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "name": "Key-rotation escrow",
+                "result": "HOLD",
+                "ruleVersion": 1,
+                "message": "Destination wallet tdgb:kestrel:new-19 (owner: Kestrel Packaging Ltd, KYB verified) is not Kestrel Packaging Ltd's registered wallet tdgb:kestrel:main. Funds locked in escrow until Kestrel Packaging Ltd authorises the change with its registered key. Automatic return at 22:00 UTC.",
+                "evidence": {
+                  "trustedWallet": "tdgb:kestrel:main",
+                  "requestedWallet": "tdgb:kestrel:new-19",
+                  "requestedWalletOwner": "Kestrel Packaging Ltd",
+                  "requestedWalletKybVerified": true
+                }
+              }
+            ]
+          },
+          "escrow": {
+            "trustedWallet": "tdgb:kestrel:main",
+            "trustedPublicKey": "MCowBQYDK2VwAyEArijSsx6knzPdnIs//lxxxqsk3r6QeYkjGq90wmqxGUo=",
+            "requestedWallet": "tdgb:kestrel:new-19",
+            "challenge": "FIS-KEYROT-v1\npayment=1\nsupplier=KESTREL\ntrustedWallet=tdgb:kestrel:main\nrequestedWallet=tdgb:kestrel:new-19\namount=15000.00\ncurrency=GBPT\nnonce=XxE32Pj1j-qETG8C_0ynUA\nexpiresAt=2026-11-25T22:00:00Z",
+            "challengeSha256": "48da6a6375e96a9a5b61a50ff48d0b54d37233f82a0fd1529005ba5a9dd64eec",
+            "expiresAt": "2026-11-25T22:00:00.000Z",
+            "maxInvalidAttempts": 3,
+            "attempts": [],
+            "resolution": {
+              "type": "RETURNED_EXPIRED",
+              "at": "2026-11-25T21:04:45.902Z",
+              "message": "No authorisation before expiry. 15,000.00 GBPT returned to treasury automatically."
+            }
+          },
+          "createdAt": "2026-11-25T20:00:00.250Z",
+          "resolvedAt": "2026-11-25T21:04:45.902Z"
+        }
+      ],
+      "rules": [
+        {
+          "code": "RISK_LIST",
+          "name": "Risk list screening",
+          "description": "Block payments to wallets on the sanctions / risk list.",
+          "outcome": "BLOCK",
+          "enabled": true,
+          "priority": 1,
+          "params": {},
+          "version": 1,
+          "updatedBy": "system",
+          "updatedAt": "2026-11-25T20:00:00.000Z"
+        },
+        {
+          "code": "VELOCITY_UNVERIFIED",
+          "name": "Unverified-wallet velocity",
+          "description": "Block when one supplier receives too many payment attempts to unverified wallets in a short window (BEC campaign pattern).",
+          "outcome": "BLOCK",
+          "enabled": true,
+          "priority": 2,
+          "params": {
+            "maxAttempts": 2,
+            "windowMinutes": 30
+          },
+          "version": 2,
+          "updatedBy": "compliance:J.Patel",
+          "updatedAt": "2026-11-25T21:05:40.770Z"
+        },
+        {
+          "code": "NEW_BENEFICIARY_WALLET",
+          "name": "Key-rotation escrow",
+          "description": "Hold in programmable escrow any payment to a wallet that is not the supplier's registered wallet, until the supplier authorises the change with its registered key.",
+          "outcome": "HOLD",
+          "enabled": true,
+          "priority": 3,
+          "params": {
+            "holdMinutes": 120,
+            "minAmount": "0.00",
+            "maxInvalidAttempts": 3
+          },
+          "version": 1,
+          "updatedBy": "system",
+          "updatedAt": "2026-11-25T20:00:00.000Z"
+        }
+      ],
+      "audit": {
+        "length": 22,
+        "headHash": "4d9bf12398bd347286af789ae850ef98708c3717175c16058c385b71fb47ce07",
+        "chainValid": true,
+        "firstInvalidSeq": null,
+        "tail": [
+          {
+            "seq": 22,
+            "eventType": "ROTATION_SIGNATURE_REJECTED",
+            "entityRef": "payment:6",
+            "actor": "key-rotation",
+            "occurredAt": "2026-11-25T21:06:20.133Z",
+            "payload": {
+              "attempt": 1,
+              "result": "INVALID",
+              "challengeSha256": "0c566c656de05d6a09635ec7ee2da7a047e6bc043bbfb913fa0b109ab7487a7b"
+            },
+            "prevHash": "bd9a3d7ef6309baa66e174a0bdf0102731663e85f4b953d765cc1b41b1179609",
+            "hash": "4d9bf12398bd347286af789ae850ef98708c3717175c16058c385b71fb47ce07"
+          },
+          {
+            "seq": 21,
+            "eventType": "FUNDS_HELD",
+            "entityRef": "payment:6",
+            "actor": "ledger",
+            "occurredAt": "2026-11-25T21:06:02.418Z",
+            "payload": {
+              "amount": "7250.00",
+              "from": "tdgb:northwind:treasury",
+              "trustedWallet": "tdgb:kestrel:main",
+              "requestedWallet": "tdgb:kestrel:new-19",
+              "escrowExpiresAt": "2026-11-25T23:06:02Z",
+              "challengeSha256": "0c566c656de05d6a09635ec7ee2da7a047e6bc043bbfb913fa0b109ab7487a7b"
+            },
+            "prevHash": "7e8e74bdc0c55fbd44135cd59eb9b26b0e897295f9775f1d83c61076f96c3044",
+            "hash": "bd9a3d7ef6309baa66e174a0bdf0102731663e85f4b953d765cc1b41b1179609"
+          },
+          {
+            "seq": 20,
+            "eventType": "PAYMENT_DECIDED",
+            "entityRef": "payment:6",
+            "actor": "engine",
+            "occurredAt": "2026-11-25T21:06:02.418Z",
+            "payload": {
+              "amount": "7250.00",
+              "currency": "GBPT",
+              "initiatedBy": "treasury:NORTHWIND",
+              "invoiceRef": "INV-KP-0901",
+              "outcome": "HOLD",
+              "payeeWallet": "tdgb:kestrel:new-19",
+              "supplierId": "KESTREL",
+              "checks": [
+                {
+                  "code": "RISK_LIST",
+                  "result": "PASS",
+                  "ruleVersion": 1
+                },
+                {
+                  "code": "VELOCITY_UNVERIFIED",
+                  "result": "PASS",
+                  "ruleVersion": 2
+                },
+                {
+                  "code": "NEW_BENEFICIARY_WALLET",
+                  "result": "HOLD",
+                  "ruleVersion": 1
+                }
+              ]
+            },
+            "prevHash": "a0dc522aa2089f29a3d26a4e0785855f95731c48357faa31ab3bb9ac1e3b1122",
+            "hash": "7e8e74bdc0c55fbd44135cd59eb9b26b0e897295f9775f1d83c61076f96c3044"
+          },
+          {
+            "seq": 19,
+            "eventType": "RULE_UPDATED",
+            "entityRef": "rule:VELOCITY_UNVERIFIED",
+            "actor": "compliance:J.Patel",
+            "occurredAt": "2026-11-25T21:05:40.770Z",
+            "payload": {
+              "rule": "VELOCITY_UNVERIFIED",
+              "before": {
+                "enabled": true,
+                "params": {
+                  "maxAttempts": 3,
+                  "windowMinutes": 30
+                },
+                "version": 1
+              },
+              "after": {
+                "enabled": true,
+                "params": {
+                  "maxAttempts": 2,
+                  "windowMinutes": 30
+                },
+                "version": 2
+              }
+            },
+            "prevHash": "14c5e4ff617b66d07a12f063413a71476d077db82a80b286919d3b71fe98f8f6",
+            "hash": "a0dc522aa2089f29a3d26a4e0785855f95731c48357faa31ab3bb9ac1e3b1122"
+          },
+          {
+            "seq": 18,
+            "eventType": "PAYMENT_DECIDED",
+            "entityRef": "payment:5",
+            "actor": "engine",
+            "occurredAt": "2026-11-25T21:05:10.004Z",
+            "payload": {
+              "amount": "30000.00",
+              "currency": "GBPT",
+              "initiatedBy": "treasury:NORTHWIND",
+              "invoiceRef": "INV-AC-1160",
+              "outcome": "BLOCK",
+              "payeeWallet": "tdgb:acmetrading:7731",
+              "supplierId": "ACME",
+              "checks": [
+                {
+                  "code": "RISK_LIST",
+                  "result": "BLOCK",
+                  "ruleVersion": 1
+                },
+                {
+                  "code": "VELOCITY_UNVERIFIED",
+                  "result": "PASS",
+                  "ruleVersion": 1
+                },
+                {
+                  "code": "NEW_BENEFICIARY_WALLET",
+                  "result": "HOLD",
+                  "ruleVersion": 1
+                }
+              ]
+            },
+            "prevHash": "0d6dcdf478492acd283f97f5f1ed749bc8db0c4371e879eb10265055831c083a",
+            "hash": "14c5e4ff617b66d07a12f063413a71476d077db82a80b286919d3b71fe98f8f6"
+          },
+          {
+            "seq": 17,
+            "eventType": "FUNDS_RETURNED",
+            "entityRef": "payment:1",
+            "actor": "ledger",
+            "occurredAt": "2026-11-25T21:04:45.902Z",
+            "payload": {
+              "amount": "15000.00",
+              "to": "tdgb:northwind:treasury",
+              "reason": "EXPIRED"
+            },
+            "prevHash": "18421b176bdbf028b6938f43f26d17ee87ec5d1c69198f4d905a1d34cc8052d2",
+            "hash": "0d6dcdf478492acd283f97f5f1ed749bc8db0c4371e879eb10265055831c083a"
+          },
+          {
+            "seq": 16,
+            "eventType": "ESCROW_EXPIRED",
+            "entityRef": "payment:1",
+            "actor": "demo",
+            "occurredAt": "2026-11-25T21:04:45.902Z",
+            "payload": {
+              "expiresAt": "2026-11-25T22:00:00Z",
+              "simulated": true
+            },
+            "prevHash": "d0769d6bd6e05afc7f5e1227e1076321dfc62c9ae4185e7829c444065584f772",
+            "hash": "18421b176bdbf028b6938f43f26d17ee87ec5d1c69198f4d905a1d34cc8052d2"
+          },
+          {
+            "seq": 15,
+            "eventType": "FUNDS_RELEASED",
+            "entityRef": "payment:4",
+            "actor": "ledger",
+            "occurredAt": "2026-11-25T21:04:20.611Z",
+            "payload": {
+              "amount": "45000.00",
+              "to": "tdgb:acme:op-02"
+            },
+            "prevHash": "0ecdd15a41503af48595482e0fff7db268f73b95cf2a16c1ff9d1dc967088d43",
+            "hash": "d0769d6bd6e05afc7f5e1227e1076321dfc62c9ae4185e7829c444065584f772"
+          },
+          {
+            "seq": 14,
+            "eventType": "WALLET_ROTATED",
+            "entityRef": "wallet:tdgb:acme:op-02",
+            "actor": "key-rotation",
+            "occurredAt": "2026-11-25T21:04:20.611Z",
+            "payload": {
+              "supplierId": "ACME",
+              "from": "tdgb:acme:op-01",
+              "to": "tdgb:acme:op-02"
+            },
+            "prevHash": "394b315c2a67db657571a86a6654665c8e6efad5f7e795f67c4054de6658d7d5",
+            "hash": "0ecdd15a41503af48595482e0fff7db268f73b95cf2a16c1ff9d1dc967088d43"
+          },
+          {
+            "seq": 13,
+            "eventType": "ROTATION_SIGNATURE_VERIFIED",
+            "entityRef": "payment:4",
+            "actor": "key-rotation",
+            "occurredAt": "2026-11-25T21:04:20.611Z",
+            "payload": {
+              "attempt": 1,
+              "result": "VALID",
+              "signerWallet": "tdgb:acme:op-01",
+              "challengeSha256": "698e8e0eef7c73b983351875b1a2729fef6c9ad5249bd6691d08e0e8708b5778"
+            },
+            "prevHash": "c560dcdd2af9da4e68a0c8c9cc7868fdc5f464a927a1c630fd2c7cbe0b3c320b",
+            "hash": "394b315c2a67db657571a86a6654665c8e6efad5f7e795f67c4054de6658d7d5"
+          },
+          {
+            "seq": 12,
+            "eventType": "FUNDS_HELD",
+            "entityRef": "payment:4",
+            "actor": "ledger",
+            "occurredAt": "2026-11-25T21:03:52.310Z",
+            "payload": {
+              "amount": "45000.00",
+              "from": "tdgb:northwind:treasury",
+              "trustedWallet": "tdgb:acme:op-01",
+              "requestedWallet": "tdgb:acme:op-02",
+              "escrowExpiresAt": "2026-11-25T23:03:52Z",
+              "challengeSha256": "698e8e0eef7c73b983351875b1a2729fef6c9ad5249bd6691d08e0e8708b5778"
+            },
+            "prevHash": "7cf0b5daec87bce9646c0d2db9e61775679ff4c79cf589ddcb2a509864847b38",
+            "hash": "c560dcdd2af9da4e68a0c8c9cc7868fdc5f464a927a1c630fd2c7cbe0b3c320b"
+          },
+          {
+            "seq": 11,
+            "eventType": "PAYMENT_DECIDED",
+            "entityRef": "payment:4",
+            "actor": "engine",
+            "occurredAt": "2026-11-25T21:03:52.310Z",
+            "payload": {
+              "amount": "45000.00",
+              "currency": "GBPT",
+              "initiatedBy": "treasury:NORTHWIND",
+              "invoiceRef": "INV-AC-1152",
+              "outcome": "HOLD",
+              "payeeWallet": "tdgb:acme:op-02",
+              "supplierId": "ACME",
+              "checks": [
+                {
+                  "code": "RISK_LIST",
+                  "result": "PASS",
+                  "ruleVersion": 1
+                },
+                {
+                  "code": "VELOCITY_UNVERIFIED",
+                  "result": "PASS",
+                  "ruleVersion": 1
+                },
+                {
+                  "code": "NEW_BENEFICIARY_WALLET",
+                  "result": "HOLD",
+                  "ruleVersion": 1
+                }
+              ]
+            },
+            "prevHash": "ca0d4b00af7f8a2e9daa7b8ab3266cfb818b3268683d88165b9799cf8c48aa0e",
+            "hash": "7cf0b5daec87bce9646c0d2db9e61775679ff4c79cf589ddcb2a509864847b38"
+          }
+        ]
+      }
+    }
+  },
+  "audit": {
+    "request": {
+      "method": "GET",
+      "path": "/api/audit?limit=200"
+    },
+    "status": 200,
+    "body": {
+      "length": 22,
+      "headHash": "4d9bf12398bd347286af789ae850ef98708c3717175c16058c385b71fb47ce07",
+      "events": [
+        {
+          "seq": 22,
+          "eventType": "ROTATION_SIGNATURE_REJECTED",
+          "entityRef": "payment:6",
+          "actor": "key-rotation",
+          "occurredAt": "2026-11-25T21:06:20.133Z",
+          "payload": {
+            "attempt": 1,
+            "result": "INVALID",
+            "challengeSha256": "0c566c656de05d6a09635ec7ee2da7a047e6bc043bbfb913fa0b109ab7487a7b"
+          },
+          "prevHash": "bd9a3d7ef6309baa66e174a0bdf0102731663e85f4b953d765cc1b41b1179609",
+          "hash": "4d9bf12398bd347286af789ae850ef98708c3717175c16058c385b71fb47ce07"
+        },
+        {
+          "seq": 21,
+          "eventType": "FUNDS_HELD",
+          "entityRef": "payment:6",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:06:02.418Z",
+          "payload": {
+            "amount": "7250.00",
+            "from": "tdgb:northwind:treasury",
+            "trustedWallet": "tdgb:kestrel:main",
+            "requestedWallet": "tdgb:kestrel:new-19",
+            "escrowExpiresAt": "2026-11-25T23:06:02Z",
+            "challengeSha256": "0c566c656de05d6a09635ec7ee2da7a047e6bc043bbfb913fa0b109ab7487a7b"
+          },
+          "prevHash": "7e8e74bdc0c55fbd44135cd59eb9b26b0e897295f9775f1d83c61076f96c3044",
+          "hash": "bd9a3d7ef6309baa66e174a0bdf0102731663e85f4b953d765cc1b41b1179609"
+        },
+        {
+          "seq": 20,
+          "eventType": "PAYMENT_DECIDED",
+          "entityRef": "payment:6",
+          "actor": "engine",
+          "occurredAt": "2026-11-25T21:06:02.418Z",
+          "payload": {
+            "amount": "7250.00",
+            "currency": "GBPT",
+            "initiatedBy": "treasury:NORTHWIND",
+            "invoiceRef": "INV-KP-0901",
+            "outcome": "HOLD",
+            "payeeWallet": "tdgb:kestrel:new-19",
+            "supplierId": "KESTREL",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "result": "PASS",
+                "ruleVersion": 2
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "result": "HOLD",
+                "ruleVersion": 1
+              }
+            ]
+          },
+          "prevHash": "a0dc522aa2089f29a3d26a4e0785855f95731c48357faa31ab3bb9ac1e3b1122",
+          "hash": "7e8e74bdc0c55fbd44135cd59eb9b26b0e897295f9775f1d83c61076f96c3044"
+        },
+        {
+          "seq": 19,
+          "eventType": "RULE_UPDATED",
+          "entityRef": "rule:VELOCITY_UNVERIFIED",
+          "actor": "compliance:J.Patel",
+          "occurredAt": "2026-11-25T21:05:40.770Z",
+          "payload": {
+            "rule": "VELOCITY_UNVERIFIED",
+            "before": {
+              "enabled": true,
+              "params": {
+                "maxAttempts": 3,
+                "windowMinutes": 30
+              },
+              "version": 1
+            },
+            "after": {
+              "enabled": true,
+              "params": {
+                "maxAttempts": 2,
+                "windowMinutes": 30
+              },
+              "version": 2
+            }
+          },
+          "prevHash": "14c5e4ff617b66d07a12f063413a71476d077db82a80b286919d3b71fe98f8f6",
+          "hash": "a0dc522aa2089f29a3d26a4e0785855f95731c48357faa31ab3bb9ac1e3b1122"
+        },
+        {
+          "seq": 18,
+          "eventType": "PAYMENT_DECIDED",
+          "entityRef": "payment:5",
+          "actor": "engine",
+          "occurredAt": "2026-11-25T21:05:10.004Z",
+          "payload": {
+            "amount": "30000.00",
+            "currency": "GBPT",
+            "initiatedBy": "treasury:NORTHWIND",
+            "invoiceRef": "INV-AC-1160",
+            "outcome": "BLOCK",
+            "payeeWallet": "tdgb:acmetrading:7731",
+            "supplierId": "ACME",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "result": "BLOCK",
+                "ruleVersion": 1
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "result": "HOLD",
+                "ruleVersion": 1
+              }
+            ]
+          },
+          "prevHash": "0d6dcdf478492acd283f97f5f1ed749bc8db0c4371e879eb10265055831c083a",
+          "hash": "14c5e4ff617b66d07a12f063413a71476d077db82a80b286919d3b71fe98f8f6"
+        },
+        {
+          "seq": 17,
+          "eventType": "FUNDS_RETURNED",
+          "entityRef": "payment:1",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:04:45.902Z",
+          "payload": {
+            "amount": "15000.00",
+            "to": "tdgb:northwind:treasury",
+            "reason": "EXPIRED"
+          },
+          "prevHash": "18421b176bdbf028b6938f43f26d17ee87ec5d1c69198f4d905a1d34cc8052d2",
+          "hash": "0d6dcdf478492acd283f97f5f1ed749bc8db0c4371e879eb10265055831c083a"
+        },
+        {
+          "seq": 16,
+          "eventType": "ESCROW_EXPIRED",
+          "entityRef": "payment:1",
+          "actor": "demo",
+          "occurredAt": "2026-11-25T21:04:45.902Z",
+          "payload": {
+            "expiresAt": "2026-11-25T22:00:00Z",
+            "simulated": true
+          },
+          "prevHash": "d0769d6bd6e05afc7f5e1227e1076321dfc62c9ae4185e7829c444065584f772",
+          "hash": "18421b176bdbf028b6938f43f26d17ee87ec5d1c69198f4d905a1d34cc8052d2"
+        },
+        {
+          "seq": 15,
+          "eventType": "FUNDS_RELEASED",
+          "entityRef": "payment:4",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:04:20.611Z",
+          "payload": {
+            "amount": "45000.00",
+            "to": "tdgb:acme:op-02"
+          },
+          "prevHash": "0ecdd15a41503af48595482e0fff7db268f73b95cf2a16c1ff9d1dc967088d43",
+          "hash": "d0769d6bd6e05afc7f5e1227e1076321dfc62c9ae4185e7829c444065584f772"
+        },
+        {
+          "seq": 14,
+          "eventType": "WALLET_ROTATED",
+          "entityRef": "wallet:tdgb:acme:op-02",
+          "actor": "key-rotation",
+          "occurredAt": "2026-11-25T21:04:20.611Z",
+          "payload": {
+            "supplierId": "ACME",
+            "from": "tdgb:acme:op-01",
+            "to": "tdgb:acme:op-02"
+          },
+          "prevHash": "394b315c2a67db657571a86a6654665c8e6efad5f7e795f67c4054de6658d7d5",
+          "hash": "0ecdd15a41503af48595482e0fff7db268f73b95cf2a16c1ff9d1dc967088d43"
+        },
+        {
+          "seq": 13,
+          "eventType": "ROTATION_SIGNATURE_VERIFIED",
+          "entityRef": "payment:4",
+          "actor": "key-rotation",
+          "occurredAt": "2026-11-25T21:04:20.611Z",
+          "payload": {
+            "attempt": 1,
+            "result": "VALID",
+            "signerWallet": "tdgb:acme:op-01",
+            "challengeSha256": "698e8e0eef7c73b983351875b1a2729fef6c9ad5249bd6691d08e0e8708b5778"
+          },
+          "prevHash": "c560dcdd2af9da4e68a0c8c9cc7868fdc5f464a927a1c630fd2c7cbe0b3c320b",
+          "hash": "394b315c2a67db657571a86a6654665c8e6efad5f7e795f67c4054de6658d7d5"
+        },
+        {
+          "seq": 12,
+          "eventType": "FUNDS_HELD",
+          "entityRef": "payment:4",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:03:52.310Z",
+          "payload": {
+            "amount": "45000.00",
+            "from": "tdgb:northwind:treasury",
+            "trustedWallet": "tdgb:acme:op-01",
+            "requestedWallet": "tdgb:acme:op-02",
+            "escrowExpiresAt": "2026-11-25T23:03:52Z",
+            "challengeSha256": "698e8e0eef7c73b983351875b1a2729fef6c9ad5249bd6691d08e0e8708b5778"
+          },
+          "prevHash": "7cf0b5daec87bce9646c0d2db9e61775679ff4c79cf589ddcb2a509864847b38",
+          "hash": "c560dcdd2af9da4e68a0c8c9cc7868fdc5f464a927a1c630fd2c7cbe0b3c320b"
+        },
+        {
+          "seq": 11,
+          "eventType": "PAYMENT_DECIDED",
+          "entityRef": "payment:4",
+          "actor": "engine",
+          "occurredAt": "2026-11-25T21:03:52.310Z",
+          "payload": {
+            "amount": "45000.00",
+            "currency": "GBPT",
+            "initiatedBy": "treasury:NORTHWIND",
+            "invoiceRef": "INV-AC-1152",
+            "outcome": "HOLD",
+            "payeeWallet": "tdgb:acme:op-02",
+            "supplierId": "ACME",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "result": "HOLD",
+                "ruleVersion": 1
+              }
+            ]
+          },
+          "prevHash": "ca0d4b00af7f8a2e9daa7b8ab3266cfb818b3268683d88165b9799cf8c48aa0e",
+          "hash": "7cf0b5daec87bce9646c0d2db9e61775679ff4c79cf589ddcb2a509864847b38"
+        },
+        {
+          "seq": 10,
+          "eventType": "WALLET_FLAGGED",
+          "entityRef": "wallet:tdgb:acmetrading:7731",
+          "actor": "key-rotation",
+          "occurredAt": "2026-11-25T21:03:15.044Z",
+          "payload": {
+            "wallet": "tdgb:acmetrading:7731",
+            "reason": "Self-authorisation attempt on PAY-0003"
+          },
+          "prevHash": "597fffead96553f447041936ff6052152e9d55e1708ad0860ed7acfeda863b76",
+          "hash": "ca0d4b00af7f8a2e9daa7b8ab3266cfb818b3268683d88165b9799cf8c48aa0e"
+        },
+        {
+          "seq": 9,
+          "eventType": "FUNDS_RETURNED",
+          "entityRef": "payment:3",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:03:15.044Z",
+          "payload": {
+            "amount": "80000.00",
+            "to": "tdgb:northwind:treasury",
+            "reason": "SELF_AUTHORISATION"
+          },
+          "prevHash": "d96f09a28af9fb6ac00aeeec6d0b8d004e38b1022c675af0d17e12db478c294e",
+          "hash": "597fffead96553f447041936ff6052152e9d55e1708ad0860ed7acfeda863b76"
+        },
+        {
+          "seq": 8,
+          "eventType": "ROTATION_SIGNATURE_REJECTED",
+          "entityRef": "payment:3",
+          "actor": "key-rotation",
+          "occurredAt": "2026-11-25T21:03:15.044Z",
+          "payload": {
+            "attempt": 1,
+            "result": "SELF_AUTHORISATION",
+            "signerPublicKey": "MCowBQYDK2VwAyEA4hXWmAYvOB3LebUIaZcq0xiKs7VPUYOlRXLS97cy/hc=",
+            "challengeSha256": "0fe51b688f39b42da2542c59dcebfa3c5a13a868df9850102bf701ee282a4911"
+          },
+          "prevHash": "1967c06d36b13cc4a6ed396d2ac740920ab3822409987871515c8a850c86668f",
+          "hash": "d96f09a28af9fb6ac00aeeec6d0b8d004e38b1022c675af0d17e12db478c294e"
+        },
+        {
+          "seq": 7,
+          "eventType": "FUNDS_HELD",
+          "entityRef": "payment:3",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:02:41.530Z",
+          "payload": {
+            "amount": "80000.00",
+            "from": "tdgb:northwind:treasury",
+            "trustedWallet": "tdgb:acme:op-01",
+            "requestedWallet": "tdgb:acmetrading:7731",
+            "escrowExpiresAt": "2026-11-25T23:02:41Z",
+            "challengeSha256": "0fe51b688f39b42da2542c59dcebfa3c5a13a868df9850102bf701ee282a4911"
+          },
+          "prevHash": "d7a07addb2f8842387bf2ba282006eabe53df29ea43be997034f892bbd17a562",
+          "hash": "1967c06d36b13cc4a6ed396d2ac740920ab3822409987871515c8a850c86668f"
+        },
+        {
+          "seq": 6,
+          "eventType": "PAYMENT_DECIDED",
+          "entityRef": "payment:3",
+          "actor": "engine",
+          "occurredAt": "2026-11-25T21:02:41.530Z",
+          "payload": {
+            "amount": "80000.00",
+            "currency": "GBPT",
+            "initiatedBy": "treasury:NORTHWIND",
+            "invoiceRef": "INV-AC-1147",
+            "outcome": "HOLD",
+            "payeeWallet": "tdgb:acmetrading:7731",
+            "supplierId": "ACME",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "result": "HOLD",
+                "ruleVersion": 1
+              }
+            ]
+          },
+          "prevHash": "783218700f6258f9fc63b39a59241bb29bdaa3ecbdcee3c6d7510a9288dfa5bf",
+          "hash": "d7a07addb2f8842387bf2ba282006eabe53df29ea43be997034f892bbd17a562"
+        },
+        {
+          "seq": 5,
+          "eventType": "FUNDS_SETTLED",
+          "entityRef": "payment:2",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T21:02:10.120Z",
+          "payload": {
+            "amount": "12400.00",
+            "from": "tdgb:northwind:treasury",
+            "to": "tdgb:brightwater:main",
+            "payerBalanceAfter": "972600.00"
+          },
+          "prevHash": "aee9884420457fae84363bd637023e9911f7554229345358fceac8d62444dbd1",
+          "hash": "783218700f6258f9fc63b39a59241bb29bdaa3ecbdcee3c6d7510a9288dfa5bf"
+        },
+        {
+          "seq": 4,
+          "eventType": "PAYMENT_DECIDED",
+          "entityRef": "payment:2",
+          "actor": "engine",
+          "occurredAt": "2026-11-25T21:02:10.120Z",
+          "payload": {
+            "amount": "12400.00",
+            "currency": "GBPT",
+            "initiatedBy": "treasury:NORTHWIND",
+            "invoiceRef": "INV-BW-2231",
+            "outcome": "APPROVE",
+            "payeeWallet": "tdgb:brightwater:main",
+            "supplierId": "BRIGHTWATER",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "result": "PASS",
+                "ruleVersion": 1
+              }
+            ]
+          },
+          "prevHash": "5c60fd67e431d448da005f1b2c611ca0668316529ca54d32ec25fc6d347cbba0",
+          "hash": "aee9884420457fae84363bd637023e9911f7554229345358fceac8d62444dbd1"
+        },
+        {
+          "seq": 3,
+          "eventType": "FUNDS_HELD",
+          "entityRef": "payment:1",
+          "actor": "ledger",
+          "occurredAt": "2026-11-25T20:00:00.250Z",
+          "payload": {
+            "amount": "15000.00",
+            "from": "tdgb:northwind:treasury",
+            "trustedWallet": "tdgb:kestrel:main",
+            "requestedWallet": "tdgb:kestrel:new-19",
+            "escrowExpiresAt": "2026-11-25T22:00:00Z",
+            "challengeSha256": "48da6a6375e96a9a5b61a50ff48d0b54d37233f82a0fd1529005ba5a9dd64eec"
+          },
+          "prevHash": "b0bf6e3531aac0e1c94a457d1b5ed2eb8f5954b4ffc8fc13d922b32358721408",
+          "hash": "5c60fd67e431d448da005f1b2c611ca0668316529ca54d32ec25fc6d347cbba0"
+        },
+        {
+          "seq": 2,
+          "eventType": "PAYMENT_DECIDED",
+          "entityRef": "payment:1",
+          "actor": "engine",
+          "occurredAt": "2026-11-25T20:00:00.250Z",
+          "payload": {
+            "amount": "15000.00",
+            "currency": "GBPT",
+            "initiatedBy": "treasury:NORTHWIND",
+            "invoiceRef": "INV-KP-0877",
+            "outcome": "HOLD",
+            "payeeWallet": "tdgb:kestrel:new-19",
+            "supplierId": "KESTREL",
+            "checks": [
+              {
+                "code": "RISK_LIST",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "VELOCITY_UNVERIFIED",
+                "result": "PASS",
+                "ruleVersion": 1
+              },
+              {
+                "code": "NEW_BENEFICIARY_WALLET",
+                "result": "HOLD",
+                "ruleVersion": 1
+              }
+            ]
+          },
+          "prevHash": "12470072e952d65befdeb05d5d1695c765c31e5030b404abb7c1f7329bff9a28",
+          "hash": "b0bf6e3531aac0e1c94a457d1b5ed2eb8f5954b4ffc8fc13d922b32358721408"
+        },
+        {
+          "seq": 1,
+          "eventType": "DEMO_RESET",
+          "entityRef": "system",
+          "actor": "demo",
+          "occurredAt": "2026-11-25T20:00:00.000Z",
+          "payload": {
+            "seedVersion": "v1",
+            "totalSupply": "1000000.00",
+            "wallets": 8,
+            "rules": 3
+          },
+          "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "hash": "12470072e952d65befdeb05d5d1695c765c31e5030b404abb7c1f7329bff9a28"
+        }
+      ]
+    }
+  },
+  "auditVerifyValid": {
+    "request": {
+      "method": "GET",
+      "path": "/api/audit/verify"
+    },
+    "status": 200,
+    "body": {
+      "valid": true,
+      "length": 22,
+      "headHash": "4d9bf12398bd347286af789ae850ef98708c3717175c16058c385b71fb47ce07",
+      "checkedAt": "2026-11-25T21:06:30.000Z",
+      "firstInvalidSeq": null,
+      "reason": null,
+      "expectedHash": null,
+      "storedHash": null
+    }
+  },
+  "auditVerifyTampered": {
+    "request": {
+      "method": "GET",
+      "path": "/api/audit/verify"
+    },
+    "status": 200,
+    "body": {
+      "valid": false,
+      "length": 22,
+      "headHash": "4d9bf12398bd347286af789ae850ef98708c3717175c16058c385b71fb47ce07",
+      "checkedAt": "2026-11-25T21:06:30.000Z",
+      "firstInvalidSeq": 7,
+      "reason": "HASH_MISMATCH",
+      "expectedHash": "a86c0ac8c750ee4a50b362dff17a00fb7f0a2760a95b08a82a206b2df86f43f2",
+      "storedHash": "1967c06d36b13cc4a6ed396d2ac740920ab3822409987871515c8a850c86668f"
+    }
+  },
+  "createPaymentSettled": {
+    "request": {
+      "method": "POST",
+      "path": "/api/payments",
+      "headers": {
+        "Idempotency-Key": "5f0c2a8e-3b1d-4c55-9a7e-0d2f6b1e9a01"
+      },
+      "body": {
+        "supplierId": "BRIGHTWATER",
+        "payeeWallet": "tdgb:brightwater:main",
+        "amount": "12400.00",
+        "invoiceRef": "INV-BW-2231"
+      }
+    },
+    "status": 201,
+    "body": {
+      "id": 2,
+      "ref": "PAY-0002",
+      "supplierId": "BRIGHTWATER",
+      "supplierName": "Brightwater Logistics Ltd",
+      "payeeWallet": "tdgb:brightwater:main",
+      "payeeWalletStatus": "TRUSTED",
+      "payeeWalletOwner": "Brightwater Logistics Ltd",
+      "payeeKybVerified": true,
+      "amount": "12400.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-BW-2231",
+      "status": "SETTLED",
+      "decision": {
+        "outcome": "APPROVE",
+        "evaluatedAt": "2026-11-25T21:02:10.120Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination wallet is not on the risk list.",
+            "evidence": {}
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "0 of 3 allowed payment attempts to unverified wallets for Brightwater Logistics Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 0,
+              "maxAttempts": 3,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination is Brightwater Logistics Ltd's registered wallet.",
+            "evidence": {
+              "trustedWallet": "tdgb:brightwater:main"
+            }
+          }
+        ]
+      },
+      "escrow": null,
+      "createdAt": "2026-11-25T21:02:10.120Z",
+      "resolvedAt": "2026-11-25T21:02:10.120Z"
+    }
+  },
+  "createPaymentHeld": {
+    "request": {
+      "method": "POST",
+      "path": "/api/payments",
+      "headers": {
+        "Idempotency-Key": "9b7d1f20-6c4e-4b8a-8f3d-2e5a7c9b0d12"
+      },
+      "body": {
+        "supplierId": "ACME",
+        "payeeWallet": "tdgb:acmetrading:7731",
+        "amount": "80000.00",
+        "invoiceRef": "INV-AC-1147"
+      }
+    },
+    "status": 201,
+    "body": {
+      "id": 3,
+      "ref": "PAY-0003",
+      "supplierId": "ACME",
+      "supplierName": "Acme Components Ltd",
+      "payeeWallet": "tdgb:acmetrading:7731",
+      "payeeWalletStatus": "UNVERIFIED",
+      "payeeWalletOwner": "Acme Trading Ltd",
+      "payeeKybVerified": true,
+      "amount": "80000.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-AC-1147",
+      "status": "HELD",
+      "decision": {
+        "outcome": "HOLD",
+        "evaluatedAt": "2026-11-25T21:02:41.530Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination wallet is not on the risk list.",
+            "evidence": {}
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "1 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 1,
+              "maxAttempts": 3,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "HOLD",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:acmetrading:7731 (owner: Acme Trading Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-01. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:02 UTC.",
+            "evidence": {
+              "trustedWallet": "tdgb:acme:op-01",
+              "requestedWallet": "tdgb:acmetrading:7731",
+              "requestedWalletOwner": "Acme Trading Ltd",
+              "requestedWalletKybVerified": true
+            }
+          }
+        ]
+      },
+      "escrow": {
+        "trustedWallet": "tdgb:acme:op-01",
+        "trustedPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+        "requestedWallet": "tdgb:acmetrading:7731",
+        "challenge": "FIS-KEYROT-v1\npayment=3\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acmetrading:7731\namount=80000.00\ncurrency=GBPT\nnonce=NtDhc-ngjY_IWbQ-3sgf8Q\nexpiresAt=2026-11-25T23:02:41Z",
+        "challengeSha256": "0fe51b688f39b42da2542c59dcebfa3c5a13a868df9850102bf701ee282a4911",
+        "expiresAt": "2026-11-25T23:02:41.000Z",
+        "maxInvalidAttempts": 3,
+        "attempts": [],
+        "resolution": null
+      },
+      "createdAt": "2026-11-25T21:02:41.530Z",
+      "resolvedAt": null
+    }
+  },
+  "createPaymentBlocked": {
+    "request": {
+      "method": "POST",
+      "path": "/api/payments",
+      "headers": {
+        "Idempotency-Key": "c3e8a4b1-0f27-4d9e-b6a5-7f1c2d3e4a5b"
+      },
+      "body": {
+        "supplierId": "ACME",
+        "payeeWallet": "tdgb:acmetrading:7731",
+        "amount": "30000.00",
+        "invoiceRef": "INV-AC-1160"
+      }
+    },
+    "status": 201,
+    "body": {
+      "id": 5,
+      "ref": "PAY-0005",
+      "supplierId": "ACME",
+      "supplierName": "Acme Components Ltd",
+      "payeeWallet": "tdgb:acmetrading:7731",
+      "payeeWalletStatus": "FLAGGED",
+      "payeeWalletOwner": "Acme Trading Ltd",
+      "payeeKybVerified": true,
+      "amount": "30000.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-AC-1160",
+      "status": "BLOCKED",
+      "decision": {
+        "outcome": "BLOCK",
+        "evaluatedAt": "2026-11-25T21:05:10.004Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "BLOCK",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:acmetrading:7731 is on the risk list (Self-authorisation attempt on PAY-0003). Blocked: no funds moved.",
+            "evidence": {
+              "wallet": "tdgb:acmetrading:7731",
+              "flagReason": "Self-authorisation attempt on PAY-0003"
+            }
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "3 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 3,
+              "maxAttempts": 3,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "HOLD",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:acmetrading:7731 (owner: Acme Trading Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-02. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:05 UTC.",
+            "evidence": {
+              "trustedWallet": "tdgb:acme:op-02",
+              "requestedWallet": "tdgb:acmetrading:7731",
+              "requestedWalletOwner": "Acme Trading Ltd",
+              "requestedWalletKybVerified": true
+            }
+          }
+        ]
+      },
+      "escrow": null,
+      "createdAt": "2026-11-25T21:05:10.004Z",
+      "resolvedAt": "2026-11-25T21:05:10.004Z"
+    }
+  },
+  "simSignAttacker": {
+    "request": {
+      "method": "POST",
+      "path": "/api/sim/sign",
+      "body": {
+        "paymentId": 3,
+        "as": "ATTACKER"
+      }
+    },
+    "status": 200,
+    "body": {
+      "paymentId": 3,
+      "as": "ATTACKER",
+      "signerWallet": "tdgb:acmetrading:7731",
+      "signerPublicKey": "MCowBQYDK2VwAyEA4hXWmAYvOB3LebUIaZcq0xiKs7VPUYOlRXLS97cy/hc=",
+      "signedMessage": "FIS-KEYROT-v1\npayment=3\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acmetrading:7731\namount=80000.00\ncurrency=GBPT\nnonce=NtDhc-ngjY_IWbQ-3sgf8Q\nexpiresAt=2026-11-25T23:02:41Z",
+      "signature": "vuhhsHli1Ob/UJE5bykl6jVHeg/RBWg/wSMpVpGf5zH0Tg8rKPpLAdNYCdnmFY5WbX+yUOPIxlW9C7v2ndIbDA==",
+      "explanation": "The attacker controls the email thread and the new wallet, so he signs with the new wallet's key. The signature is cryptographically valid, but made with the wrong key."
+    }
+  },
+  "simSignLegit": {
+    "request": {
+      "method": "POST",
+      "path": "/api/sim/sign",
+      "body": {
+        "paymentId": 4,
+        "as": "LEGIT_SUPPLIER"
+      }
+    },
+    "status": 200,
+    "body": {
+      "paymentId": 4,
+      "as": "LEGIT_SUPPLIER",
+      "signerWallet": "tdgb:acme:op-01",
+      "signerPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+      "signedMessage": "FIS-KEYROT-v1\npayment=4\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acme:op-02\namount=45000.00\ncurrency=GBPT\nnonce=ceR3CbuAaYUN845l1b56Lg\nexpiresAt=2026-11-25T23:03:52Z",
+      "signature": "ikkkElMJH4OoD+0AVr4Y+NkuXG1T1EYrEpPKTe5osxiHMT5+NppgTO4yr97Js42ALNnLPjMdNb5mD15UdwXBDA==",
+      "explanation": "Acme Components Ltd signs the challenge with the key of its registered wallet (tdgb:acme:op-01), held in its own wallet/HSM."
+    }
+  },
+  "simSignTampered": {
+    "request": {
+      "method": "POST",
+      "path": "/api/sim/sign",
+      "body": {
+        "paymentId": 6,
+        "as": "TAMPERED"
+      }
+    },
+    "status": 200,
+    "body": {
+      "paymentId": 6,
+      "as": "TAMPERED",
+      "signerWallet": "tdgb:kestrel:main",
+      "signerPublicKey": "MCowBQYDK2VwAyEArijSsx6knzPdnIs//lxxxqsk3r6QeYkjGq90wmqxGUo=",
+      "signedMessage": "FIS-KEYROT-v1\npayment=6\nsupplier=KESTREL\ntrustedWallet=tdgb:kestrel:main\nrequestedWallet=tdgb:acme:op-02\namount=7250.00\ncurrency=GBPT\nnonce=NR0-q9Rn03pYlcfD5Wqe-Q\nexpiresAt=2026-11-25T23:06:02Z",
+      "signature": "XPru5Zv/8p2HukUO5LRBD81RlJFZhXY8RqgyQLT5Sl9+4gSCKZNTvjGjUQbcGY+bnhTR3STtBd2g5+6AZkAlCA==",
+      "explanation": "A legitimate signature over an altered challenge (different destination). Simulates replay / substitution."
+    }
+  },
+  "authorizeBlockedSelfAuthorisation": {
+    "request": {
+      "method": "POST",
+      "path": "/api/payments/3/rotation-authorization",
+      "body": {
+        "signature": "vuhhsHli1Ob/UJE5bykl6jVHeg/RBWg/wSMpVpGf5zH0Tg8rKPpLAdNYCdnmFY5WbX+yUOPIxlW9C7v2ndIbDA==",
+        "submittedBy": "supplier-portal"
+      }
+    },
+    "status": 200,
+    "body": {
+      "id": 3,
+      "ref": "PAY-0003",
+      "supplierId": "ACME",
+      "supplierName": "Acme Components Ltd",
+      "payeeWallet": "tdgb:acmetrading:7731",
+      "payeeWalletStatus": "FLAGGED",
+      "payeeWalletOwner": "Acme Trading Ltd",
+      "payeeKybVerified": true,
+      "amount": "80000.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-AC-1147",
+      "status": "BLOCKED",
+      "decision": {
+        "outcome": "HOLD",
+        "evaluatedAt": "2026-11-25T21:02:41.530Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination wallet is not on the risk list.",
+            "evidence": {}
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "1 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 1,
+              "maxAttempts": 3,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "HOLD",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:acmetrading:7731 (owner: Acme Trading Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-01. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:02 UTC.",
+            "evidence": {
+              "trustedWallet": "tdgb:acme:op-01",
+              "requestedWallet": "tdgb:acmetrading:7731",
+              "requestedWalletOwner": "Acme Trading Ltd",
+              "requestedWalletKybVerified": true
+            }
+          }
+        ]
+      },
+      "escrow": {
+        "trustedWallet": "tdgb:acme:op-01",
+        "trustedPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+        "requestedWallet": "tdgb:acmetrading:7731",
+        "challenge": "FIS-KEYROT-v1\npayment=3\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acmetrading:7731\namount=80000.00\ncurrency=GBPT\nnonce=NtDhc-ngjY_IWbQ-3sgf8Q\nexpiresAt=2026-11-25T23:02:41Z",
+        "challengeSha256": "0fe51b688f39b42da2542c59dcebfa3c5a13a868df9850102bf701ee282a4911",
+        "expiresAt": "2026-11-25T23:02:41.000Z",
+        "maxInvalidAttempts": 3,
+        "attempts": [
+          {
+            "at": "2026-11-25T21:03:15.044Z",
+            "result": "SELF_AUTHORISATION",
+            "signerPublicKey": "MCowBQYDK2VwAyEA4hXWmAYvOB3LebUIaZcq0xiKs7VPUYOlRXLS97cy/hc=",
+            "message": "Signature is valid, but it was produced with the key of the wallet requesting the funds (tdgb:acmetrading:7731), not with Acme Components Ltd's registered key. A wallet cannot authorise itself."
+          }
+        ],
+        "resolution": {
+          "type": "BLOCKED_SELF_AUTHORISATION",
+          "at": "2026-11-25T21:03:15.044Z",
+          "message": "Payment blocked. 80,000.00 GBPT returned to treasury; tdgb:acmetrading:7731 added to the risk list."
+        }
+      },
+      "createdAt": "2026-11-25T21:02:41.530Z",
+      "resolvedAt": "2026-11-25T21:03:15.044Z"
+    }
+  },
+  "authorizeReleased": {
+    "request": {
+      "method": "POST",
+      "path": "/api/payments/4/rotation-authorization",
+      "body": {
+        "signature": "ikkkElMJH4OoD+0AVr4Y+NkuXG1T1EYrEpPKTe5osxiHMT5+NppgTO4yr97Js42ALNnLPjMdNb5mD15UdwXBDA==",
+        "submittedBy": "supplier-portal"
+      }
+    },
+    "status": 200,
+    "body": {
+      "id": 4,
+      "ref": "PAY-0004",
+      "supplierId": "ACME",
+      "supplierName": "Acme Components Ltd",
+      "payeeWallet": "tdgb:acme:op-02",
+      "payeeWalletStatus": "TRUSTED",
+      "payeeWalletOwner": "Acme Components Ltd",
+      "payeeKybVerified": true,
+      "amount": "45000.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-AC-1152",
+      "status": "RELEASED",
+      "decision": {
+        "outcome": "HOLD",
+        "evaluatedAt": "2026-11-25T21:03:52.310Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination wallet is not on the risk list.",
+            "evidence": {}
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "2 of 3 allowed payment attempts to unverified wallets for Acme Components Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 2,
+              "maxAttempts": 3,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "HOLD",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:acme:op-02 (owner: Acme Components Ltd, KYB verified) is not Acme Components Ltd's registered wallet tdgb:acme:op-01. Funds locked in escrow until Acme Components Ltd authorises the change with its registered key. Automatic return at 23:03 UTC.",
+            "evidence": {
+              "trustedWallet": "tdgb:acme:op-01",
+              "requestedWallet": "tdgb:acme:op-02",
+              "requestedWalletOwner": "Acme Components Ltd",
+              "requestedWalletKybVerified": true
+            }
+          }
+        ]
+      },
+      "escrow": {
+        "trustedWallet": "tdgb:acme:op-01",
+        "trustedPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+        "requestedWallet": "tdgb:acme:op-02",
+        "challenge": "FIS-KEYROT-v1\npayment=4\nsupplier=ACME\ntrustedWallet=tdgb:acme:op-01\nrequestedWallet=tdgb:acme:op-02\namount=45000.00\ncurrency=GBPT\nnonce=ceR3CbuAaYUN845l1b56Lg\nexpiresAt=2026-11-25T23:03:52Z",
+        "challengeSha256": "698e8e0eef7c73b983351875b1a2729fef6c9ad5249bd6691d08e0e8708b5778",
+        "expiresAt": "2026-11-25T23:03:52.000Z",
+        "maxInvalidAttempts": 3,
+        "attempts": [
+          {
+            "at": "2026-11-25T21:04:20.611Z",
+            "result": "VALID",
+            "signerPublicKey": "MCowBQYDK2VwAyEAZz9347mFb/V/RVDPV561n7D5s8AStTzDKJ4L8XRzY8g=",
+            "message": "Signature verified with Acme Components Ltd's registered key (tdgb:acme:op-01). Wallet change authorised."
+          }
+        ],
+        "resolution": {
+          "type": "RELEASED_KEY_ROTATION",
+          "at": "2026-11-25T21:04:20.611Z",
+          "message": "Funds released to tdgb:acme:op-02. It is now Acme Components Ltd's registered wallet; tdgb:acme:op-01 retired."
+        }
+      },
+      "createdAt": "2026-11-25T21:03:52.310Z",
+      "resolvedAt": "2026-11-25T21:04:20.611Z"
+    }
+  },
+  "expireReverted": {
+    "request": {
+      "method": "POST",
+      "path": "/api/demo/payments/1/expire"
+    },
+    "status": 200,
+    "body": {
+      "id": 1,
+      "ref": "PAY-0001",
+      "supplierId": "KESTREL",
+      "supplierName": "Kestrel Packaging Ltd",
+      "payeeWallet": "tdgb:kestrel:new-19",
+      "payeeWalletStatus": "UNVERIFIED",
+      "payeeWalletOwner": "Kestrel Packaging Ltd",
+      "payeeKybVerified": true,
+      "amount": "15000.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-KP-0877",
+      "status": "REVERTED",
+      "decision": {
+        "outcome": "HOLD",
+        "evaluatedAt": "2026-11-25T20:00:00.250Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination wallet is not on the risk list.",
+            "evidence": {}
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "1 of 3 allowed payment attempts to unverified wallets for Kestrel Packaging Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 1,
+              "maxAttempts": 3,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "HOLD",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:kestrel:new-19 (owner: Kestrel Packaging Ltd, KYB verified) is not Kestrel Packaging Ltd's registered wallet tdgb:kestrel:main. Funds locked in escrow until Kestrel Packaging Ltd authorises the change with its registered key. Automatic return at 22:00 UTC.",
+            "evidence": {
+              "trustedWallet": "tdgb:kestrel:main",
+              "requestedWallet": "tdgb:kestrel:new-19",
+              "requestedWalletOwner": "Kestrel Packaging Ltd",
+              "requestedWalletKybVerified": true
+            }
+          }
+        ]
+      },
+      "escrow": {
+        "trustedWallet": "tdgb:kestrel:main",
+        "trustedPublicKey": "MCowBQYDK2VwAyEArijSsx6knzPdnIs//lxxxqsk3r6QeYkjGq90wmqxGUo=",
+        "requestedWallet": "tdgb:kestrel:new-19",
+        "challenge": "FIS-KEYROT-v1\npayment=1\nsupplier=KESTREL\ntrustedWallet=tdgb:kestrel:main\nrequestedWallet=tdgb:kestrel:new-19\namount=15000.00\ncurrency=GBPT\nnonce=XxE32Pj1j-qETG8C_0ynUA\nexpiresAt=2026-11-25T22:00:00Z",
+        "challengeSha256": "48da6a6375e96a9a5b61a50ff48d0b54d37233f82a0fd1529005ba5a9dd64eec",
+        "expiresAt": "2026-11-25T22:00:00.000Z",
+        "maxInvalidAttempts": 3,
+        "attempts": [],
+        "resolution": {
+          "type": "RETURNED_EXPIRED",
+          "at": "2026-11-25T21:04:45.902Z",
+          "message": "No authorisation before expiry. 15,000.00 GBPT returned to treasury automatically."
+        }
+      },
+      "createdAt": "2026-11-25T20:00:00.250Z",
+      "resolvedAt": "2026-11-25T21:04:45.902Z"
+    }
+  },
+  "patchRule": {
+    "request": {
+      "method": "PATCH",
+      "path": "/api/rules/VELOCITY_UNVERIFIED",
+      "body": {
+        "params": {
+          "maxAttempts": 2
+        },
+        "changedBy": "compliance:J.Patel"
+      }
+    },
+    "status": 200,
+    "body": {
+      "code": "VELOCITY_UNVERIFIED",
+      "name": "Unverified-wallet velocity",
+      "description": "Block when one supplier receives too many payment attempts to unverified wallets in a short window (BEC campaign pattern).",
+      "outcome": "BLOCK",
+      "enabled": true,
+      "priority": 2,
+      "params": {
+        "maxAttempts": 2,
+        "windowMinutes": 30
+      },
+      "version": 2,
+      "updatedBy": "compliance:J.Patel",
+      "updatedAt": "2026-11-25T21:05:40.770Z"
+    }
+  },
+  "reset": {
+    "request": {
+      "method": "POST",
+      "path": "/api/demo/reset"
+    },
+    "status": 200,
+    "body": {
+      "ok": true,
+      "resetAt": "2026-11-25T20:00:00.000Z",
+      "headHash": "5c60fd67e431d448da005f1b2c611ca0668316529ca54d32ec25fc6d347cbba0",
+      "payments": 1,
+      "auditLength": 3
+    }
+  },
+  "authorizeInvalidStillHeld": {
+    "request": {
+      "method": "POST",
+      "path": "/api/payments/6/rotation-authorization",
+      "body": {
+        "signature": "XPru5Zv/8p2HukUO5LRBD81RlJFZhXY8RqgyQLT5Sl9+4gSCKZNTvjGjUQbcGY+bnhTR3STtBd2g5+6AZkAlCA==",
+        "submittedBy": "supplier-portal"
+      }
+    },
+    "status": 200,
+    "body": {
+      "id": 6,
+      "ref": "PAY-0006",
+      "supplierId": "KESTREL",
+      "supplierName": "Kestrel Packaging Ltd",
+      "payeeWallet": "tdgb:kestrel:new-19",
+      "payeeWalletStatus": "UNVERIFIED",
+      "payeeWalletOwner": "Kestrel Packaging Ltd",
+      "payeeKybVerified": true,
+      "amount": "7250.00",
+      "currency": "GBPT",
+      "invoiceRef": "INV-KP-0901",
+      "status": "HELD",
+      "decision": {
+        "outcome": "HOLD",
+        "evaluatedAt": "2026-11-25T21:06:02.418Z",
+        "checks": [
+          {
+            "code": "RISK_LIST",
+            "name": "Risk list screening",
+            "result": "PASS",
+            "ruleVersion": 1,
+            "message": "Destination wallet is not on the risk list.",
+            "evidence": {}
+          },
+          {
+            "code": "VELOCITY_UNVERIFIED",
+            "name": "Unverified-wallet velocity",
+            "result": "PASS",
+            "ruleVersion": 2,
+            "message": "1 of 2 allowed payment attempts to unverified wallets for Kestrel Packaging Ltd in the last 30 min.",
+            "evidence": {
+              "attempts": 1,
+              "maxAttempts": 2,
+              "windowMinutes": 30
+            }
+          },
+          {
+            "code": "NEW_BENEFICIARY_WALLET",
+            "name": "Key-rotation escrow",
+            "result": "HOLD",
+            "ruleVersion": 1,
+            "message": "Destination wallet tdgb:kestrel:new-19 (owner: Kestrel Packaging Ltd, KYB verified) is not Kestrel Packaging Ltd's registered wallet tdgb:kestrel:main. Funds locked in escrow until Kestrel Packaging Ltd authorises the change with its registered key. Automatic return at 23:06 UTC.",
+            "evidence": {
+              "trustedWallet": "tdgb:kestrel:main",
+              "requestedWallet": "tdgb:kestrel:new-19",
+              "requestedWalletOwner": "Kestrel Packaging Ltd",
+              "requestedWalletKybVerified": true
+            }
+          }
+        ]
+      },
+      "escrow": {
+        "trustedWallet": "tdgb:kestrel:main",
+        "trustedPublicKey": "MCowBQYDK2VwAyEArijSsx6knzPdnIs//lxxxqsk3r6QeYkjGq90wmqxGUo=",
+        "requestedWallet": "tdgb:kestrel:new-19",
+        "challenge": "FIS-KEYROT-v1\npayment=6\nsupplier=KESTREL\ntrustedWallet=tdgb:kestrel:main\nrequestedWallet=tdgb:kestrel:new-19\namount=7250.00\ncurrency=GBPT\nnonce=NR0-q9Rn03pYlcfD5Wqe-Q\nexpiresAt=2026-11-25T23:06:02Z",
+        "challengeSha256": "0c566c656de05d6a09635ec7ee2da7a047e6bc043bbfb913fa0b109ab7487a7b",
+        "expiresAt": "2026-11-25T23:06:02.000Z",
+        "maxInvalidAttempts": 3,
+        "attempts": [
+          {
+            "at": "2026-11-25T21:06:20.133Z",
+            "result": "INVALID",
+            "signerPublicKey": null,
+            "message": "Signature does not match Kestrel Packaging Ltd's registered key for this exact challenge. Invalid attempt 1 of 3."
+          }
+        ],
+        "resolution": null
+      },
+      "createdAt": "2026-11-25T21:06:02.418Z",
+      "resolvedAt": null
+    }
+  },
+  "tamper": {
+    "request": {
+      "method": "POST",
+      "path": "/api/demo/tamper",
+      "body": {
+        "seq": 7
+      }
+    },
+    "status": 200,
+    "body": {
+      "tamperedSeq": 7,
+      "field": "amount",
+      "before": "80000.00",
+      "after": "8000.00",
+      "note": "Direct DB write that bypasses the application. Hash NOT recomputed."
+    }
+  },
+  "errors": {
+    "insufficientFunds": {
+      "status": 422,
+      "body": {
+        "type": "about:blank",
+        "title": "Unprocessable Entity",
+        "status": 422,
+        "code": "INSUFFICIENT_FUNDS",
+        "detail": "Treasury balance 935,350.00 GBPT is lower than the payment amount 2,000,000.00 GBPT."
+      }
+    },
+    "unknownWallet": {
+      "status": 404,
+      "body": {
+        "type": "about:blank",
+        "title": "Not Found",
+        "status": 404,
+        "code": "UNKNOWN_WALLET",
+        "detail": "Wallet tdgb:acme:op-99 does not exist on the network."
+      }
+    },
+    "idempotencyConflict": {
+      "status": 409,
+      "body": {
+        "type": "about:blank",
+        "title": "Conflict",
+        "status": 409,
+        "code": "IDEMPOTENCY_CONFLICT",
+        "detail": "Idempotency-Key already used with a different request body."
+      }
+    },
+    "paymentNotHeld": {
+      "status": 409,
+      "body": {
+        "type": "about:blank",
+        "title": "Conflict",
+        "status": 409,
+        "code": "PAYMENT_NOT_HELD",
+        "detail": "PAY-0004 is RELEASED; only HELD payments accept authorisations."
+      }
+    },
+    "malformedSignature": {
+      "status": 400,
+      "body": {
+        "type": "about:blank",
+        "title": "Bad Request",
+        "status": 400,
+        "code": "MALFORMED_SIGNATURE",
+        "detail": "Signature must be base64 encoding exactly 64 bytes (Ed25519). No state was changed."
+      }
+    },
+    "invalidRuleParams": {
+      "status": 400,
+      "body": {
+        "type": "about:blank",
+        "title": "Bad Request",
+        "status": 400,
+        "code": "INVALID_PARAMS",
+        "detail": "maxAttempts must be an integer >= 1."
+      }
+    },
+    "rateLimited": {
+      "status": 429,
+      "body": {
+        "type": "about:blank",
+        "title": "Too Many Requests",
+        "status": 429,
+        "code": "RATE_LIMITED",
+        "detail": "Too many requests from this client. Slow down."
+      }
+    }
+  }
+}

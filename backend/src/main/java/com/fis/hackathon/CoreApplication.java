@@ -1,4 +1,4 @@
-package com.fis.core;
+package com.fis.hackathon;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
