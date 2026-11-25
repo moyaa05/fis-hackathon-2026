@@ -1,10 +1,13 @@
 package com.fis.hackathon.shared;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Lo que dice UNA regla sobre UN pago. Es lo que la UI pinta en la "tarjeta de decisión".
  * message va en inglés (jurado); evidence son los datos que justifican el resultado.
+ * (Entrega 02: evidence admite nulls y conserva el orden de inserción.)
  */
 public record Check(
         String code,
@@ -15,6 +18,6 @@ public record Check(
         Map<String, Object> evidence
 ) {
     public Check {
-        evidence = evidence == null ? Map.of() : Map.copyOf(evidence);
+        evidence = evidence == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(evidence));
     }
 }

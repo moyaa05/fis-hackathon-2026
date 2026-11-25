@@ -1,0 +1,52 @@
+digraph Architecture {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=11, nodesep=0.3, ranksep=0.45, pad=0.25, bgcolor="white",
+         label=<<B>Key-Rotation Escrow · architecture</B>  <FONT POINT-SIZE="9" COLOR="#555555">(prototype in green boxes · production additions dashed)</FONT>>,
+         labelloc=t, labeljust=l];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#3a5a40", fillcolor="#e9f5ec", penwidth=1.2];
+  edge  [fontname="Helvetica", fontsize=8.5, color="#444444", arrowsize=0.7];
+
+  subgraph cluster_actors {
+    label=<<B>Actors</B>>; style="rounded,dashed"; color="#999999"; fontsize=10;
+    treasury [label=<<B>Corporate treasury</B><BR/><FONT POINT-SIZE="8.5">Northwind plc · pays supplier invoices</FONT>>, fillcolor="#f2f2f2", color="#777777"];
+    erp      [label=<<B>ERP</B> (SAP / NetSuite)<BR/><FONT POINT-SIZE="8.5">payment runs via API · next step</FONT>>, style="rounded,dashed", fillcolor="white", color="#777777"];
+    supplier [label=<<B>Supplier</B><BR/><FONT POINT-SIZE="8.5">signs with its registered<BR/>wallet key (HSM)</FONT>>, fillcolor="#f2f2f2", color="#777777"];
+    attacker [label=<<B>Attacker (BEC)</B><BR/><FONT POINT-SIZE="8.5">controls the email thread<BR/>and a KYB-verified mule wallet</FONT>>, fillcolor="#fdecea", color="#b23b3b"];
+  }
+
+  ui [label=<<B>Web UI</B> · React + Vite<BR/><FONT POINT-SIZE="8.5">Treasury · Supplier · Audit &amp; Rules</FONT>>];
+
+  gw [label=<<B>API gateway</B> · Nginx<BR/><FONT POINT-SIZE="8.5">security headers · rate limits<BR/>reads 30 r/s · writes 5 r/s → HTTP 429</FONT>>];
+
+  subgraph cluster_core {
+    label=<<B>Control service</B> · Java 21 · Spring Boot 3 (virtual threads)>; style="rounded"; color="#3a5a40"; fontsize=10;
+    pay    [label=<<B>Payment &amp; escrow</B><BR/><FONT POINT-SIZE="8.5">settle · hold · release · auto-return</FONT>>];
+    engine [label=<<B>Decision engine</B><BR/><FONT POINT-SIZE="8.5">3 programmable rules · versioned<BR/>APPROVE / HOLD / BLOCK + explanation</FONT>>];
+    keyrot [label=<<B>Key-rotation verifier</B><BR/><FONT POINT-SIZE="8.5">Ed25519 challenge · VALID /<BR/>SELF_AUTHORISATION / INVALID</FONT>>];
+    audit  [label=<<B>Audit chain</B><BR/><FONT POINT-SIZE="8.5">SHA-256 hash chain · tamper detection</FONT>>];
+    sim    [label=<<B>Counterparty simulator</B><BR/><FONT POINT-SIZE="8.5">demo only</FONT>>, fillcolor="#fff8e1", color="#b08900"];
+  }
+
+  db [shape=cylinder, label=<<B>PostgreSQL 16</B><BR/><FONT POINT-SIZE="8.5">party · wallet · rule · payment · audit_event</FONT>>];
+
+  net [label=<<B>Tokenised sterling deposit network</B><BR/><FONT POINT-SIZE="8.5">GBTD-style · simulated by the ledger in the prototype</FONT>>, style="rounded,dashed", fillcolor="white", color="#3a5a40"];
+
+  prod [shape=note, style="filled", fillcolor="#f7f7f7", color="#999999", fontsize=8.5,
+        label=<<B>Production path</B><BR ALIGN="LEFT"/>· Kubernetes, N replicas (the chain lock lives in Postgres)<BR ALIGN="LEFT"/>· Keys in supplier-bank custody / HSM<BR ALIGN="LEFT"/>· Chain head anchored with counterparty bank / regulator<BR ALIGN="LEFT"/>· Cross-border (ISO 20022, Travel Rule) in phase 2<BR ALIGN="LEFT"/>>];
+
+  treasury -> ui   [label="1 pay invoice"];
+  erp -> gw        [style=dashed, label="API"];
+  attacker -> treasury [style=dashed, color="#b23b3b", fontcolor="#b23b3b", label="fake 'new bank details' email"];
+  ui -> gw;
+  gw -> pay        [label="REST /api"];
+  pay -> engine    [label="2 decide"];
+  pay -> keyrot    [label="3 challenge / verify"];
+  supplier -> sim  [style=dashed, label="4 signs"];
+  attacker -> sim  [style=dashed, color="#b23b3b"];
+  sim -> keyrot    [style=dashed];
+  pay -> audit     [label="5 every step"];
+  engine -> audit  [label="rule changes"];
+  pay -> db; engine -> db; audit -> db;
+  pay -> net       [style=dashed, label="6 settle / hold / return"];
+  net -> prod      [style=invis];
+  {rank=same; db; net;}
+}

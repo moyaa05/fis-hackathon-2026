@@ -1,0 +1,59 @@
+digraph DataModel {
+  graph [rankdir=LR, fontname="Helvetica", nodesep=0.5, ranksep=0.9, pad=0.25, bgcolor="white",
+         label=<<B>Data model</B>  <FONT POINT-SIZE="9" COLOR="#555555">PostgreSQL 16 · JSONB for flexible, auditable fields</FONT>>, labelloc=t, labeljust=l];
+  node  [shape=plain, fontname="Helvetica", fontsize=9.5];
+  edge  [fontname="Helvetica", fontsize=8.5, color="#555555", arrowsize=0.7];
+
+  party [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" COLOR="#3a5a40">
+    <TR><TD BGCOLOR="#3a5a40" ALIGN="LEFT"><FONT COLOR="white"><B>party</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>id</B> PK</TD></TR>
+    <TR><TD ALIGN="LEFT">legal_name</TD></TR>
+    <TR><TD ALIGN="LEFT">role · PAYER | SUPPLIER | OTHER</TD></TR>
+    <TR><TD ALIGN="LEFT">kyb <I>jsonb</I></TD></TR></TABLE>>];
+
+  wallet [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" COLOR="#3a5a40">
+    <TR><TD BGCOLOR="#3a5a40" ALIGN="LEFT"><FONT COLOR="white"><B>wallet</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>address</B> PK</TD></TR>
+    <TR><TD ALIGN="LEFT">party_id FK</TD></TR>
+    <TR><TD ALIGN="LEFT">bank</TD></TR>
+    <TR><TD ALIGN="LEFT">public_key · Ed25519</TD></TR>
+    <TR><TD ALIGN="LEFT">status · TRUSTED | UNVERIFIED | ROTATED | FLAGGED</TD></TR>
+    <TR><TD ALIGN="LEFT">balance · numeric(18,2)</TD></TR>
+    <TR><TD ALIGN="LEFT">meta <I>jsonb</I></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT POINT-SIZE="8" COLOR="#555555">max. 1 TRUSTED wallet per company</FONT></TD></TR></TABLE>>];
+
+  payment [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" COLOR="#3a5a40">
+    <TR><TD BGCOLOR="#3a5a40" ALIGN="LEFT"><FONT COLOR="white"><B>payment</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>id</B> PK</TD></TR>
+    <TR><TD ALIGN="LEFT">idempotency_key · unique</TD></TR>
+    <TR><TD ALIGN="LEFT">payer_wallet FK · payee_wallet FK</TD></TR>
+    <TR><TD ALIGN="LEFT">supplier_id FK</TD></TR>
+    <TR><TD ALIGN="LEFT">amount · invoice_ref</TD></TR>
+    <TR><TD ALIGN="LEFT">status · SETTLED | HELD | RELEASED | REVERTED | BLOCKED</TD></TR>
+    <TR><TD ALIGN="LEFT">decision <I>jsonb</I> · every rule + version + reason</TD></TR>
+    <TR><TD ALIGN="LEFT">escrow <I>jsonb</I> · challenge, attempts, expiry</TD></TR></TABLE>>];
+
+  rule [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" COLOR="#3a5a40">
+    <TR><TD BGCOLOR="#3a5a40" ALIGN="LEFT"><FONT COLOR="white"><B>rule</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>code</B> PK</TD></TR>
+    <TR><TD ALIGN="LEFT">outcome · HOLD | BLOCK</TD></TR>
+    <TR><TD ALIGN="LEFT">enabled · priority</TD></TR>
+    <TR><TD ALIGN="LEFT">params <I>jsonb</I> · editable live</TD></TR>
+    <TR><TD ALIGN="LEFT">version · updated_by · updated_at</TD></TR></TABLE>>];
+
+  audit [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" COLOR="#3a5a40">
+    <TR><TD BGCOLOR="#3a5a40" ALIGN="LEFT"><FONT COLOR="white"><B>audit_event</B> · append-only</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>seq</B> PK</TD></TR>
+    <TR><TD ALIGN="LEFT">event_type · entity_ref · actor</TD></TR>
+    <TR><TD ALIGN="LEFT">payload · canonical JSON</TD></TR>
+    <TR><TD ALIGN="LEFT">occurred_at</TD></TR>
+    <TR><TD ALIGN="LEFT">prev_hash → hash (SHA-256)</TD></TR></TABLE>>];
+
+  party -> wallet   [label="owns 1..n"];
+  party -> payment  [label="supplier"];
+  wallet -> payment [label="payer / payee"];
+  rule -> payment   [style=dashed, label="decides (cites version)"];
+  payment -> audit  [style=dashed, label="every state change"];
+  rule -> audit     [style=dashed, label="every rule change"];
+  audit -> audit    [label="prev_hash", color="#3a5a40"];
+}
