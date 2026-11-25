@@ -84,7 +84,16 @@ public class PaymentService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "supplierId, payeeWallet, amount and invoiceRef are required.");
         }
 
-        String reqHash = sha256(req.supplierId() + "|" + req.payeeWallet() + "|" + req.amount().trim() + "|" + req.invoiceRef().trim());
+        String invoiceRef = req.invoiceRef().trim();
+        if (invoiceRef.isEmpty() || invoiceRef.length() > 40) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "invoiceRef must be between 1 and 40 characters.");
+        }
+        if (idempotencyKey.trim().length() > 80) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Idempotency-Key must be at most 80 characters.");
+        }
+
+        // El importe entra normalizado en el hash: "12400.0" y "12400.00" son el mismo body para la idempotencia.
+        String reqHash = sha256(req.supplierId().trim() + "|" + req.payeeWallet().trim() + "|" + normalisedAmount(req.amount()) + "|" + invoiceRef);
         Optional<PaymentEntity> existing = paymentRepo.findByIdempotencyKey(idempotencyKey.trim());
         if (existing.isPresent()) {
             PaymentEntity p = existing.get();
@@ -106,14 +115,16 @@ public class PaymentService {
         amount = amount.setScale(2);
 
         PartyEntity supplier = partyRepo.findById(req.supplierId().trim())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "UNKNOWN_SUPPLIER", "Supplier " + req.supplierId() + " not found."));
+                .filter(party -> "SUPPLIER".equals(party.getRole()))   // el pagador o un tercero no son proveedores
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "UNKNOWN_SUPPLIER", "Supplier " + req.supplierId() + " is not a registered supplier."));
         WalletEntity payee = walletRepo.findById(req.payeeWallet().trim())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "UNKNOWN_WALLET", "Wallet " + req.payeeWallet() + " not found."));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "UNKNOWN_WALLET", "Wallet " + req.payeeWallet() + " does not exist on the network."));
         WalletEntity payer = walletRepo.findById(PAYER_WALLET)
                 .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "PAYER_MISSING", "Treasury wallet missing."));
 
         if (payer.getBalance().compareTo(amount) < 0) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "INSUFFICIENT_FUNDS", "Insufficient treasury balance.");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "INSUFFICIENT_FUNDS",
+                    "Treasury balance " + gbpt(payer.getBalance()) + " is lower than the payment amount " + gbpt(amount) + ".");
         }
 
         PartyEntity payeeOwner = partyRepo.findById(payee.getPartyId()).orElse(null);
@@ -134,7 +145,7 @@ public class PaymentService {
                 ViewMapper.isKybVerified(payeeOwner),
                 flagReason,
                 amount,
-                req.invoiceRef().trim(),
+                invoiceRef,
                 now
         );
 
@@ -155,7 +166,7 @@ public class PaymentService {
                 .payeeWallet(payee.getAddress())
                 .amount(amount)
                 .currency("GBPT")
-                .invoiceRef(req.invoiceRef().trim())
+                .invoiceRef(invoiceRef)
                 .status(status)
                 .decision(decisionMap)
                 .createdAt(now)
@@ -181,7 +192,7 @@ public class PaymentService {
         decidedPayload.put("amount", ViewMapper.money(amount));
         decidedPayload.put("checks", auditChecks);
         decidedPayload.put("currency", "GBPT");
-        decidedPayload.put("initiatedBy", PAYER_ID);
+        decidedPayload.put("initiatedBy", "treasury:" + PAYER_ID);
         decidedPayload.put("invoiceRef", payment.getInvoiceRef());
         decidedPayload.put("outcome", decision.outcome().name());
         decidedPayload.put("payeeWallet", payee.getAddress());
@@ -259,12 +270,22 @@ public class PaymentService {
         PaymentEntity payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment " + paymentId + " not found."));
         if (!"HELD".equals(payment.getStatus()) || payment.getEscrow() == null) {
-            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_HELD", "Payment " + paymentId + " is not in HELD status.");
+            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_HELD",
+                    ref(paymentId) + " is " + payment.getStatus() + "; only HELD payments accept authorisations.");
+        }
+
+        // El challenge firmado lleva expiresAt: pasado ese instante ya no se acepta ninguna firma,
+        // aunque el scheduler (cada 5 s) todavia no haya devuelto los fondos.
+        Instant escrowExpiresAt = Instant.parse(String.valueOf(payment.getEscrow().get("expiresAt")));
+        if (!Instant.now().isBefore(escrowExpiresAt)) {
+            throw new ApiException(HttpStatus.CONFLICT, "ESCROW_EXPIRED",
+                    ref(paymentId) + " escrow window expired at " + AuditHasher.SECONDS.format(escrowExpiresAt)
+                            + ". Authorisation rejected; funds return to treasury automatically.");
         }
 
         String sig = req != null ? req.signature() : null;
         if (sig == null || sig.isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "MALFORMED_SIGNATURE", "Signature is required.");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "MALFORMED_SIGNATURE", "Signature is required. No state was changed.");
         }
 
         Map<String, Object> escrow = new LinkedHashMap<>(payment.getEscrow());
@@ -277,15 +298,30 @@ public class PaymentService {
         WalletEntity requestedWallet = walletRepo.findById(requestedWalletAddr)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "UNKNOWN_WALLET", "Requested wallet not found."));
 
+        // Re-screening al liberar: si el destino entro en la lista de riesgo mientras el pago estaba retenido,
+        // ninguna firma lo libera; los fondos siguen en escrow y vuelven solos al vencer.
+        if ("FLAGGED".equals(requestedWallet.getStatus())) {
+            Object reason = requestedWallet.getMeta() != null ? requestedWallet.getMeta().get("flagReason") : null;
+            throw new ApiException(HttpStatus.CONFLICT, "DESTINATION_FLAGGED",
+                    ref(paymentId) + " cannot be authorised: destination wallet " + requestedWalletAddr + " is on the risk list"
+                            + (reason != null ? " (" + reason + ")" : "") + ". Funds stay in escrow and return to treasury at expiry.");
+        }
+
         RotationResult result = keyRotationService.verify(challenge, sig.trim(), trustedPub, requestedWallet.getPublicKey());
         if (result == RotationResult.MALFORMED) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "MALFORMED_SIGNATURE", "Signature is not valid base64 Ed25519 (64 bytes).");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "MALFORMED_SIGNATURE",
+                    "Signature must be base64 encoding exactly 64 bytes (Ed25519). No state was changed.");
         }
 
         Instant now = AuditHasher.now();
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> attempts = new ArrayList<>((List<Map<String, Object>>) escrow.getOrDefault("attempts", List.of()));
         int attemptNum = attempts.size() + 1;
+        int maxInvalid = escrow.get("maxInvalidAttempts") instanceof Number n ? n.intValue() : 3;
+        long invalidCount = attempts.stream().filter(a -> "INVALID".equals(a.get("result"))).count()
+                + (result == RotationResult.INVALID ? 1 : 0);
+        String supplierName = partyRepo.findById(payment.getSupplierId()).map(PartyEntity::getLegalName).orElse(payment.getSupplierId());
+        String amountText = gbpt(payment.getAmount());
 
         String signerPubUsed = switch (result) {
             case VALID -> trustedPub;
@@ -293,9 +329,11 @@ public class PaymentService {
             default -> null;
         };
         String attemptMsg = switch (result) {
-            case VALID -> "Valid Ed25519 signature verified against registered key (" + trustedWalletAddr + ").";
-            case SELF_AUTHORISATION -> "BEC attack signature detected: signed with requested destination key (" + requestedWalletAddr + ") instead of supplier's registered key.";
-            default -> "Signature did not verify against registered key.";
+            case VALID -> "Signature verified with " + supplierName + "'s registered key (" + trustedWalletAddr + "). Wallet change authorised.";
+            case SELF_AUTHORISATION -> "Signature is valid, but it was produced with the key of the wallet requesting the funds ("
+                    + requestedWalletAddr + "), not with " + supplierName + "'s registered key. A wallet cannot authorise itself.";
+            default -> "Signature does not match " + supplierName + "'s registered key for this exact challenge. Invalid attempt "
+                    + invalidCount + " of " + maxInvalid + ".";
         };
 
         Map<String, Object> attemptRecord = new LinkedHashMap<>();
@@ -315,11 +353,15 @@ public class PaymentService {
             auditLog.append("ROTATION_SIGNATURE_VERIFIED", "payment:" + paymentId, "key-rotation", verifiedPayload);
 
             boolean sameParty = Objects.equals(requestedWallet.getPartyId(), payment.getSupplierId());
-            String resolutionType = sameParty ? "RELEASED_KEY_ROTATION" : "RELEASED_ONE_OFF";
+            WalletEntity oldTrusted = sameParty
+                    ? walletRepo.findByPartyIdAndStatus(payment.getSupplierId(), "TRUSTED").orElse(null) : null;
+            // Si otro pago ya promovio esta misma wallet, no hay nada que rotar: solo se liberan los fondos.
+            boolean alreadyRegistered = oldTrusted != null && oldTrusted.getAddress().equals(requestedWallet.getAddress());
+            boolean rotate = sameParty && !alreadyRegistered;
+            String resolutionType = rotate ? "RELEASED_KEY_ROTATION" : "RELEASED_ONE_OFF";
 
-            if (sameParty) {
-                WalletEntity oldTrusted = walletRepo.findByPartyIdAndStatus(payment.getSupplierId(), "TRUSTED").orElse(null);
-                if (oldTrusted != null && !oldTrusted.getAddress().equals(requestedWallet.getAddress())) {
+            if (rotate) {
+                if (oldTrusted != null) {
                     Map<String, Object> oldMeta = new HashMap<>(oldTrusted.getMeta() != null ? oldTrusted.getMeta() : Map.of());
                     oldMeta.put("rotatedTo", requestedWallet.getAddress());
                     oldTrusted.setStatus("ROTATED");
@@ -347,9 +389,13 @@ public class PaymentService {
             Map<String, Object> resObj = new LinkedHashMap<>();
             resObj.put("type", resolutionType);
             resObj.put("at", AuditHasher.SECONDS.format(now));
-            resObj.put("message", sameParty
-                    ? "Funds released and " + requestedWallet.getAddress() + " promoted to TRUSTED wallet."
-                    : "One-off payment authorised and funds released.");
+            resObj.put("message", rotate
+                    ? "Funds released to " + requestedWallet.getAddress() + ". It is now " + supplierName + "'s registered wallet"
+                            + (oldTrusted != null ? "; " + oldTrusted.getAddress() + " retired." : ".")
+                    : alreadyRegistered
+                    ? amountText + " released to " + requestedWallet.getAddress() + ", already " + supplierName + "'s registered wallet."
+                    : "One-off payment authorised with " + supplierName + "'s registered key. " + amountText + " released to "
+                            + requestedWallet.getAddress() + "; registered wallet unchanged.");
             escrow.put("resolution", resObj);
 
             payment.setStatus("RELEASED");
@@ -373,21 +419,21 @@ public class PaymentService {
             returnFundsToPayer(payment, now, "SELF_AUTHORISATION");
 
             Map<String, Object> flagMeta = new HashMap<>(requestedWallet.getMeta() != null ? requestedWallet.getMeta() : Map.of());
-            flagMeta.put("flagReason", "Self-authorisation BEC attempt on payment PAY-" + String.format("%04d", paymentId));
+            flagMeta.put("flagReason", "Self-authorisation attempt on " + ref(paymentId));
             requestedWallet.setStatus("FLAGGED");
             requestedWallet.setMeta(flagMeta);
             requestedWallet.setUpdatedAt(now);
             walletRepo.saveAndFlush(requestedWallet);
 
             Map<String, Object> flagPayload = new TreeMap<>();
-            flagPayload.put("reason", "SELF_AUTHORISATION_BEC_ATTEMPT");
+            flagPayload.put("reason", "Self-authorisation attempt on " + ref(paymentId));
             flagPayload.put("wallet", requestedWallet.getAddress());
             auditLog.append("WALLET_FLAGGED", "wallet:" + requestedWallet.getAddress(), "key-rotation", flagPayload);
 
             Map<String, Object> resObj = new LinkedHashMap<>();
             resObj.put("type", "BLOCKED_SELF_AUTHORISATION");
             resObj.put("at", AuditHasher.SECONDS.format(now));
-            resObj.put("message", "Blocked: signed with destination wallet key instead of supplier's registered key. Funds returned and destination wallet flagged.");
+            resObj.put("message", "Payment blocked. " + amountText + " returned to treasury; " + requestedWallet.getAddress() + " added to the risk list.");
             escrow.put("resolution", resObj);
 
             payment.setStatus("BLOCKED");
@@ -403,15 +449,12 @@ public class PaymentService {
             rejPayload.put("result", "INVALID");
             auditLog.append("ROTATION_SIGNATURE_REJECTED", "payment:" + paymentId, "key-rotation", rejPayload);
 
-            int maxInvalid = escrow.get("maxInvalidAttempts") instanceof Number n ? n.intValue() : 3;
-            long invalidCount = attempts.stream().filter(a -> "INVALID".equals(a.get("result"))).count();
-
             if (invalidCount >= maxInvalid) {
                 returnFundsToPayer(payment, now, "MAX_INVALID_ATTEMPTS");
                 Map<String, Object> resObj = new LinkedHashMap<>();
                 resObj.put("type", "BLOCKED_MAX_ATTEMPTS");
                 resObj.put("at", AuditHasher.SECONDS.format(now));
-                resObj.put("message", "Blocked after " + invalidCount + " invalid signature attempts. Funds returned to treasury.");
+                resObj.put("message", "Payment blocked after " + invalidCount + " invalid signature attempts. " + amountText + " returned to treasury.");
                 escrow.put("resolution", resObj);
                 payment.setStatus("BLOCKED");
                 payment.setResolvedAt(now);
@@ -430,7 +473,8 @@ public class PaymentService {
         PaymentEntity payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment " + paymentId + " not found."));
         if (!"HELD".equals(payment.getStatus()) || payment.getEscrow() == null) {
-            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_HELD", "Payment " + paymentId + " is not in HELD status.");
+            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_HELD",
+                    ref(paymentId) + " is " + payment.getStatus() + "; only HELD payments can expire.");
         }
 
         Instant now = AuditHasher.now();
@@ -451,7 +495,7 @@ public class PaymentService {
         Map<String, Object> resObj = new LinkedHashMap<>();
         resObj.put("type", "RETURNED_EXPIRED");
         resObj.put("at", AuditHasher.SECONDS.format(now));
-        resObj.put("message", "Escrow window expired without valid supplier authorisation. Funds returned automatically to treasury.");
+        resObj.put("message", "No authorisation before expiry. " + gbpt(payment.getAmount()) + " returned to treasury automatically.");
         escrow.put("resolution", resObj);
 
         payment.setStatus("REVERTED");
@@ -470,7 +514,8 @@ public class PaymentService {
         PaymentEntity payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment " + paymentId + " not found."));
         if (!"HELD".equals(payment.getStatus()) || payment.getEscrow() == null) {
-            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_HELD", "Payment " + paymentId + " is not in HELD status.");
+            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_HELD",
+                    ref(paymentId) + " is " + payment.getStatus() + "; only HELD payments can be signed.");
         }
         Map<String, Object> escrow = payment.getEscrow();
         String challenge = String.valueOf(escrow.get("challenge"));
@@ -497,6 +542,23 @@ public class PaymentService {
         WalletEntity payee = walletRepo.findById(p.getPayeeWallet()).orElse(null);
         PartyEntity payeeOwner = payee != null ? partyRepo.findById(payee.getPartyId()).orElse(null) : null;
         return viewMapper.toPaymentView(p, supplier, payee, payeeOwner);
+    }
+
+    private static String ref(long paymentId) {
+        return String.format("PAY-%04d", paymentId);
+    }
+
+    /** "80,000.00 GBPT" para los mensajes en ingles que lee el jurado. */
+    private static String gbpt(BigDecimal amount) {
+        return String.format(Locale.UK, "%,.2f GBPT", amount);
+    }
+
+    private static String normalisedAmount(String raw) {
+        try {
+            return new BigDecimal(raw.trim()).setScale(2).toPlainString();
+        } catch (ArithmeticException | NumberFormatException notAValidAmount) {
+            return raw.trim();   // se rechazara despues con 422 INVALID_AMOUNT
+        }
     }
 
     public static String sha256(String input) {

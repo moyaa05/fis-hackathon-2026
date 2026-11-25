@@ -78,6 +78,9 @@ public class DemoSeeder implements ApplicationRunner {
     public ResetResult reset() {
         ledgerLock.acquire();
 
+        // Mismo orden de tablas que GET /api/state (party -> wallet -> payment -> rule -> audit_event):
+        // sin esto, el TRUNCATE y un poll en curso se bloquean en cruz y PostgreSQL aborta uno ("deadlock detected").
+        jdbc.execute("LOCK TABLE party, wallet, payment, rule, audit_event IN ACCESS EXCLUSIVE MODE");
         jdbc.execute("TRUNCATE audit_event, payment, rule, wallet, party RESTART IDENTITY CASCADE");
         entityManager.clear();
 

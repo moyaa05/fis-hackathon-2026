@@ -12,6 +12,7 @@ import com.fis.hackathon.ledger.repository.WalletRepository;
 import com.fis.hackathon.payments.service.PaymentService;
 import com.fis.hackathon.rules.RuleService;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,15 @@ public class StateQueryService {
     private final RuleService ruleService;
     private final AuditReadService auditReadService;
     private final ViewMapper viewMapper;
+    private final JdbcTemplate jdbc;
+
+    /** Una sola sentencia = una sola foto de la BD: saldos y escrow siempre cuadran entre si, aunque haya un commit en medio. */
+    private static final String LEDGER_SQL = """
+            SELECT (SELECT COALESCE(SUM(balance), 0) FROM wallet  WHERE address =  ?)      AS payer_balance,
+                   (SELECT COALESCE(SUM(balance), 0) FROM wallet  WHERE address <> ?)      AS supplier_balances,
+                   (SELECT COALESCE(SUM(amount),  0) FROM payment WHERE status = 'HELD')   AS in_escrow
+            """;
+    private static final String METRICS_SQL = "SELECT status, COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total FROM payment GROUP BY status";
 
     public StateQueryService(
             PartyRepository partyRepo,
@@ -36,7 +46,8 @@ public class StateQueryService {
             PaymentRepository paymentRepo,
             RuleService ruleService,
             AuditReadService auditReadService,
-            ViewMapper viewMapper
+            ViewMapper viewMapper,
+            JdbcTemplate jdbc
     ) {
         this.partyRepo = partyRepo;
         this.walletRepo = walletRepo;
@@ -44,6 +55,7 @@ public class StateQueryService {
         this.ruleService = ruleService;
         this.auditReadService = auditReadService;
         this.viewMapper = viewMapper;
+        this.jdbc = jdbc;
     }
 
     @Transactional(readOnly = true)
@@ -56,19 +68,13 @@ public class StateQueryService {
 
         List<PaymentEntity> allPayments = paymentRepo.findAllByOrderByIdDesc(PageRequest.of(0, 50));
 
-        WalletEntity payerWallet = walletMap.get(PaymentService.PAYER_WALLET);
         PartyEntity payerParty = parties.get(PaymentService.PAYER_ID);
-        BigDecimal payerBal = payerWallet != null ? payerWallet.getBalance() : BigDecimal.ZERO;
 
-        BigDecimal supplierBal = wallets.stream()
-                .filter(w -> !PaymentService.PAYER_WALLET.equals(w.getAddress()))
-                .map(WalletEntity::getBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal inEscrow = allPayments.stream()
-                .filter(p -> "HELD".equals(p.getStatus()))
-                .map(PaymentEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Totales del ledger: agregados en BD sobre TODOS los pagos (la lista de arriba solo trae los 50 ultimos).
+        Map<String, Object> ledger = jdbc.queryForMap(LEDGER_SQL, PaymentService.PAYER_WALLET, PaymentService.PAYER_WALLET);
+        BigDecimal payerBal = (BigDecimal) ledger.get("payer_balance");
+        BigDecimal supplierBal = (BigDecimal) ledger.get("supplier_balances");
+        BigDecimal inEscrow = (BigDecimal) ledger.get("in_escrow");
 
         BigDecimal total = payerBal.add(supplierBal).add(inEscrow);
         boolean conserved = total.compareTo(new BigDecimal("1000000.00")) == 0;
@@ -80,11 +86,15 @@ public class StateQueryService {
         BigDecimal protectedAmt = BigDecimal.ZERO;
         int protectedCnt = 0;
 
-        for (PaymentEntity p : allPayments) {
-            byStatus.merge(p.getStatus(), 1, Integer::sum);
-            if ("HELD".equals(p.getStatus()) || "BLOCKED".equals(p.getStatus()) || "REVERTED".equals(p.getStatus())) {
-                protectedAmt = protectedAmt.add(p.getAmount());
-                protectedCnt++;
+        // "Protected" = dinero que NO llego a un destino no autorizado: BLOCKED + REVERTED (igual que mocks.json).
+        // Un pago HELD todavia no esta decidido: no cuenta hasta que se bloquea o se devuelve.
+        for (Map<String, Object> row : jdbc.queryForList(METRICS_SQL)) {
+            String status = String.valueOf(row.get("status"));
+            int n = ((Number) row.get("n")).intValue();
+            byStatus.merge(status, n, Integer::sum);
+            if ("BLOCKED".equals(status) || "REVERTED".equals(status)) {
+                protectedAmt = protectedAmt.add((BigDecimal) row.get("total"));
+                protectedCnt += n;
             }
         }
 
