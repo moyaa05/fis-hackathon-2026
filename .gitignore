@@ -1,0 +1,15 @@
+# --- build output (se regenera; nunca al repo) ---
+backend/target/
+frontend/dist/
+node_modules/
+
+# --- IDE / sistema ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# --- restos locales ---
+*.log
+diagnostico_fis.txt
+Claude outputs/

@@ -103,14 +103,14 @@ public class DemoSeeder implements ApplicationRunner {
         ));
 
         walletRepo.saveAll(List.of(
-                wallet("tdgb:northwind:treasury", "NORTHWIND", "Thames Bank (sim)", "TRUSTED", new BigDecimal("1000000.00"), Map.of("label", "Primary Treasury")),
-                wallet("tdgb:acme:op-01", "ACME", "Albion Bank (sim)", "TRUSTED", BigDecimal.ZERO, Map.of("label", "Registered Operating Account")),
-                wallet("tdgb:acme:op-02", "ACME", "Mercia Bank (sim)", "UNVERIFIED", BigDecimal.ZERO, Map.of("label", "New Mercia Bank Treasury")),
-                wallet("tdgb:acmetrading:7731", "ACME_TRADING", "Severn Bank (sim)", "UNVERIFIED", BigDecimal.ZERO, Map.of("label", "Acme Trading Settlement")),
-                wallet("tdgb:brightwater:main", "BRIGHTWATER", "Thames Bank (sim)", "TRUSTED", BigDecimal.ZERO, Map.of("label", "Brightwater Main")),
-                wallet("tdgb:kestrel:main", "KESTREL", "Albion Bank (sim)", "TRUSTED", BigDecimal.ZERO, Map.of("label", "Kestrel Main")),
-                wallet("tdgb:kestrel:new-19", "KESTREL", "Severn Bank (sim)", "UNVERIFIED", BigDecimal.ZERO, Map.of("label", "Kestrel New Account")),
-                wallet("tdgb:orion:01", "ORION", "Severn Bank (sim)", "FLAGGED", BigDecimal.ZERO, Map.of("label", "Orion Account", "flagReason", "UK sanctions list (OFSI, simulated)"))
+                wallet("tdgb:northwind:treasury", "NORTHWIND", "Thames Bank (sim)", "TRUSTED", new BigDecimal("1000000.00"), Map.of("label", "Northwind treasury")),
+                wallet("tdgb:acme:op-01", "ACME", "Albion Bank (sim)", "TRUSTED", BigDecimal.ZERO, Map.of("label", "Acme operating account")),
+                wallet("tdgb:acme:op-02", "ACME", "Mercia Bank (sim)", "UNVERIFIED", BigDecimal.ZERO, Map.of("label", "Acme new operating account")),
+                wallet("tdgb:acmetrading:7731", "ACME_TRADING", "Severn Bank (sim)", "UNVERIFIED", BigDecimal.ZERO, Map.of("label", "Acme Trading collections")),
+                wallet("tdgb:brightwater:main", "BRIGHTWATER", "Thames Bank (sim)", "TRUSTED", BigDecimal.ZERO, Map.of("label", "Brightwater receivables")),
+                wallet("tdgb:kestrel:main", "KESTREL", "Albion Bank (sim)", "TRUSTED", BigDecimal.ZERO, Map.of("label", "Kestrel receivables")),
+                wallet("tdgb:kestrel:new-19", "KESTREL", "Severn Bank (sim)", "UNVERIFIED", BigDecimal.ZERO, Map.of("label", "Kestrel new account (unconfirmed)")),
+                wallet("tdgb:orion:01", "ORION", "Severn Bank (sim)", "FLAGGED", BigDecimal.ZERO, Map.of("label", "Orion settlement", "flagReason", "UK sanctions list (OFSI, simulated)"))
         ));
         walletRepo.flush();
 

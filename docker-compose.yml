@@ -1,13 +1,18 @@
+# Puertos: por defecto solo escuchan en este portatil (127.0.0.1). En la WiFi del recinto nadie mas puede
+# llamar a /api/demo/reset ni a Postgres. Para abrirlos a la red local (otro equipo entra por IP):
+#   BIND_ADDR=0.0.0.0 docker compose up -d
+# restart: unless-stopped -> si Docker o un contenedor se cae, vuelve a levantarse solo.
 services:
   db:
     image: postgres:16-alpine
     container_name: fis-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: fis_user
       POSTGRES_PASSWORD: fis_password
       POSTGRES_DB: fis_ledger
     ports:
-      - "15432:5432"
+      - "${BIND_ADDR:-127.0.0.1}:15432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,8 +24,9 @@ services:
   backend:
     build: ./backend
     container_name: fis-backend
+    restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "${BIND_ADDR:-127.0.0.1}:8081:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/fis_ledger
       SPRING_DATASOURCE_USERNAME: fis_user
@@ -32,16 +38,18 @@ services:
   frontend:
     build: ./frontend
     container_name: fis-frontend
+    restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "${BIND_ADDR:-127.0.0.1}:5173:5173"
     depends_on:
       - backend
 
   gateway:
     image: nginx:alpine
     container_name: fis-gateway
+    restart: unless-stopped
     ports:
-      - "18080:80"
+      - "${BIND_ADDR:-127.0.0.1}:18080:80"
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

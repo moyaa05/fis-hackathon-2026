@@ -37,7 +37,8 @@ public class ViewMapper {
                 str(meta.get("label")),
                 str(meta.get("flagReason")),
                 str(meta.get("rotatedFrom")),
-                str(meta.get("rotatedTo"))
+                str(meta.get("rotatedTo")),
+                w.getPublicKey()
         );
     }
 

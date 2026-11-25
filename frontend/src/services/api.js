@@ -1,16 +1,30 @@
 import mocks from '../mocks/mocks.json';
 
-export const USE_MOCKS = true;
+// Live API by default. Mock data only with VITE_USE_MOCKS=true (layout work without the backend).
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
+
+const mock = (key) => structuredClone(mocks[key].body);
+
+// crypto.randomUUID only exists in secure contexts (https or localhost).
+const idempotencyKey = () =>
+  globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 async function request(path, options = {}) {
-  const res = await fetch(path, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      ...options,
+      // headers AFTER ...options: otherwise a caller's headers replace Content-Type
+      // and the browser sends text/plain (the backend answers 415).
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    });
+  } catch {
+    throw new Error('Cannot reach the gateway. Is the stack running?');
+  }
 
+  // nginx answers 502 with HTML while the backend restarts: never assume JSON.
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.detail || data.title || `HTTP ${res.status}`);
@@ -21,74 +35,47 @@ async function request(path, options = {}) {
   return data;
 }
 
+const post = (path, body, headers) =>
+  request(path, { method: 'POST', headers, body: body === undefined ? undefined : JSON.stringify(body) });
+
 export const api = {
-  async getState() {
-    if (USE_MOCKS) return structuredClone(mocks.state.body);
-    return request('/api/state');
-  },
+  getState: () => (USE_MOCKS ? Promise.resolve(mock('state')) : request('/api/state')),
 
-  async getAudit(limit = 200) {
-    if (USE_MOCKS) return structuredClone(mocks.audit.body);
-    return request(`/api/audit?limit=${limit}`);
-  },
+  getAudit: (limit = 200) => (USE_MOCKS ? Promise.resolve(mock('audit')) : request(`/api/audit?limit=${limit}`)),
 
-  async verifyAudit() {
-    if (USE_MOCKS) return structuredClone(mocks.auditVerifyValid.body);
-    return request('/api/audit/verify');
-  },
+  verifyAudit: () => (USE_MOCKS ? Promise.resolve(mock('auditVerifyValid')) : request('/api/audit/verify')),
 
-  async createPayment(payload) {
-    if (USE_MOCKS) return structuredClone(mocks.createPaymentHeld.body);
-    return request('/api/payments', {
-      method: 'POST',
-      headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify(payload),
-    });
-  },
+  createPayment: (payload) =>
+    USE_MOCKS
+      ? Promise.resolve(mock('createPaymentHeld'))
+      : post('/api/payments', payload, { 'Idempotency-Key': idempotencyKey() }),
 
-  async simSign(paymentId, as) {
+  // Supplier side (simulated): someone signs the challenge with a key...
+  simSign: (paymentId, as) => {
     if (USE_MOCKS) {
-      if (as === 'ATTACKER') return structuredClone(mocks.simSignAttacker.body);
-      if (as === 'TAMPERED') return structuredClone(mocks.simSignTampered.body);
-      return structuredClone(mocks.simSignLegit.body);
+      return Promise.resolve(
+        mock(as === 'ATTACKER' ? 'simSignAttacker' : as === 'TAMPERED' ? 'simSignTampered' : 'simSignLegit'),
+      );
     }
-    return request('/api/sim/sign', {
-      method: 'POST',
-      body: JSON.stringify({ paymentId, as }),
-    });
+    return post('/api/sim/sign', { paymentId, as });
   },
 
-  async authorizeRotation(paymentId, signature, submittedBy = 'supplier-portal') {
-    if (USE_MOCKS) return structuredClone(mocks.authorizeReleased.body);
-    return request(`/api/payments/${paymentId}/rotation-authorization`, {
-      method: 'POST',
-      body: JSON.stringify({ signature, submittedBy }),
-    });
-  },
+  // ...and the bank checks which key produced it. This endpoint is the product.
+  authorizeRotation: (paymentId, signature, submittedBy = 'supplier-portal') =>
+    USE_MOCKS
+      ? Promise.resolve(mock('authorizeReleased'))
+      : post(`/api/payments/${paymentId}/rotation-authorization`, { signature, submittedBy }),
 
-  async expirePayment(paymentId) {
-    if (USE_MOCKS) return structuredClone(mocks.expireReverted.body);
-    return request(`/api/demo/payments/${paymentId}/expire`, { method: 'POST' });
-  },
+  expirePayment: (paymentId) =>
+    USE_MOCKS ? Promise.resolve(mock('expireReverted')) : post(`/api/demo/payments/${paymentId}/expire`),
 
-  async patchRule(code, params, changedBy = 'compliance:J.Patel') {
-    if (USE_MOCKS) return structuredClone(mocks.patchRule.body);
-    return request(`/api/rules/${code}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ params, changedBy }),
-    });
-  },
+  patchRule: (code, params, changedBy = 'compliance:J.Patel') =>
+    USE_MOCKS
+      ? Promise.resolve(mock('patchRule'))
+      : request(`/api/rules/${code}`, { method: 'PATCH', body: JSON.stringify({ params, changedBy }) }),
 
-  async tamperAudit(seq = 7) {
-    if (USE_MOCKS) return structuredClone(mocks.tamper.body);
-    return request('/api/demo/tamper', {
-      method: 'POST',
-      body: JSON.stringify({ seq }),
-    });
-  },
+  // No seq: the backend picks the latest FUNDS_* event, so it works at any point of the demo.
+  tamperAudit: () => (USE_MOCKS ? Promise.resolve(mock('tamper')) : post('/api/demo/tamper')),
 
-  async resetDemo() {
-    if (USE_MOCKS) return structuredClone(mocks.reset.body);
-    return request('/api/demo/reset', { method: 'POST' });
-  },
+  resetDemo: () => (USE_MOCKS ? Promise.resolve(mock('reset')) : post('/api/demo/reset')),
 };

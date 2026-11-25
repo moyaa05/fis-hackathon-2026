@@ -1,17 +1,7 @@
-import { useState } from 'react';
-import {
-  Sliders,
-  ShieldCheck,
-  ShieldAlert,
-  Skull,
-  RotateCcw,
-  Save,
-  Wallet,
-  CheckCircle2,
-  AlertTriangle,
-} from 'lucide-react';
-import { api, USE_MOCKS } from '../services/api';
-import mocks from '../mocks/mocks.json';
+import { useEffect, useState } from 'react';
+import { ShieldCheck, ShieldAlert, DatabaseZap, Sliders, Save, Wallet, ScrollText } from 'lucide-react';
+import { api } from '../services/api';
+import { gbp, clock, keyPrint, shortHash, payRef } from '../lib/format';
 
 const WALLET_BADGE = {
   TRUSTED: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -20,369 +10,315 @@ const WALLET_BADGE = {
   FLAGGED: 'bg-rose-100 text-rose-800 border-rose-300',
 };
 
-const formatGBP = (val) =>
-  `£${Number(val || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const WALLET_LABEL = { TRUSTED: 'REGISTERED', ROTATED: 'RETIRED', UNVERIFIED: 'NOT REGISTERED', FLAGGED: 'RISK LIST' };
 
-export default function AuditView({ state, onRefresh, onMockTamper }) {
-  const velocityRule = state.rules.find((r) => r.code === 'VELOCITY_UNVERIFIED');
-  const escrowRule = state.rules.find((r) => r.code === 'NEW_BENEFICIARY_WALLET');
+const RULE_FIELDS = {
+  VELOCITY_UNVERIFIED: [
+    { key: 'maxAttempts', label: 'Max attempts' },
+    { key: 'windowMinutes', label: 'Window (min)' },
+  ],
+  NEW_BENEFICIARY_WALLET: [
+    { key: 'holdMinutes', label: 'Escrow window (min)' },
+    { key: 'maxInvalidAttempts', label: 'Invalid signatures allowed' },
+  ],
+};
 
-  const [maxAttempts, setMaxAttempts] = useState(velocityRule?.params?.maxAttempts ?? 2);
-  const [windowMinutes, setWindowMinutes] = useState(velocityRule?.params?.windowMinutes ?? 30);
-  const [holdMinutes, setHoldMinutes] = useState(escrowRule?.params?.holdMinutes ?? 120);
+const compactPayload = (payload) =>
+  Object.entries(payload || {})
+    .map(([k, v]) => {
+      const text = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      return `${k}: ${text.length > 44 ? `${text.slice(0, 20)}…` : text}`;
+    })
+    .join(' · ');
 
+export default function AuditView({ state, onRefresh }) {
+  const { audit } = state;
+  const [log, setLog] = useState([]);
+  const [report, setReport] = useState(null);
+  const [tamper, setTamper] = useState(null);
   const [busy, setBusy] = useState(null);
-  const [verifyResult, setVerifyResult] = useState(null);
-  const [tamperInfo, setTamperInfo] = useState(null);
   const [feedback, setFeedback] = useState(null);
-  const [mockIsTampered, setMockIsTampered] = useState(false);
+
+  // The log and the verification report follow the chain: reload whenever it grows or its validity changes.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([api.getAudit(200), api.verifyAudit()])
+      .then(([list, verify]) => {
+        if (cancelled) return;
+        setLog(list.events || []);
+        setReport(verify);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [audit.length, audit.headHash, audit.chainValid, audit.firstInvalidSeq, tamper]);
+
+  const handleTamper = async () => {
+    try {
+      setBusy('tamper');
+      setFeedback(null);
+      setTamper(await api.tamperAudit());
+      await onRefresh();
+    } catch (err) {
+      setFeedback({ ok: false, text: err.message });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const handleSaveRule = async (code, params) => {
     try {
       setBusy(code);
       setFeedback(null);
       const updated = await api.patchRule(code, params);
-      setFeedback({
-        type: 'ok',
-        text: `Rule ${updated.code} updated to v${updated.version} by ${updated.updatedBy}.`,
-      });
-      if (!USE_MOCKS) await onRefresh();
+      setFeedback({ ok: true, text: `${updated.name} is now v${updated.version}, changed by ${updated.updatedBy}. The change is in the audit log.` });
+      await onRefresh();
     } catch (err) {
-      setFeedback({ type: 'error', text: err.message });
+      setFeedback({ ok: false, text: err.message });
     } finally {
       setBusy(null);
     }
   };
 
-  const handleVerify = async () => {
-    try {
-      setBusy('verify');
-      setFeedback(null);
-      const res = USE_MOCKS
-        ? structuredClone(mockIsTampered ? mocks.auditVerifyTampered.body : mocks.auditVerifyValid.body)
-        : await api.verifyAudit();
-      setVerifyResult(res);
-      if (!USE_MOCKS) await onRefresh();
-    } catch (err) {
-      setFeedback({ type: 'error', text: err.message });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleTamper = async () => {
-    try {
-      setBusy('tamper');
-      setFeedback(null);
-      const res = await api.tamperAudit(7);
-      setTamperInfo(res);
-      if (USE_MOCKS) {
-        setMockIsTampered(true);
-        setVerifyResult(structuredClone(mocks.auditVerifyTampered.body));
-        if (onMockTamper) onMockTamper(false);
-      } else {
-        const verified = await api.verifyAudit();
-        setVerifyResult(verified);
-        await onRefresh();
-      }
-    } catch (err) {
-      setFeedback({ type: 'error', text: err.message });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleReset = async () => {
-    try {
-      setBusy('reset');
-      setFeedback(null);
-      setTamperInfo(null);
-      setVerifyResult(null);
-      await api.resetDemo();
-      if (USE_MOCKS) {
-        setMockIsTampered(false);
-        if (onMockTamper) onMockTamper(true);
-        setFeedback({ type: 'ok', text: 'Demo reset simulated (mock mode).' });
-      } else {
-        await onRefresh();
-        setFeedback({ type: 'ok', text: 'Demo state reset to initial seed.' });
-      }
-    } catch (err) {
-      setFeedback({ type: 'error', text: err.message });
-    } finally {
-      setBusy(null);
-    }
-  };
+  const broken = audit.chainValid === false;
 
   return (
-    <div className="space-y-6">
-      {/* HEADER + DEMO RESET */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Compliance Rules & Audit Integrity</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Live programmable policy controls, cryptographic SHA-256 chain verification, and wallet trust registry.
-          </p>
+    <div className="space-y-4">
+      {/* 1 · INTEGRITY */}
+      <section className={`rounded-lg border-2 bg-white ${broken ? 'border-rose-600' : 'border-emerald-500'}`}>
+        <div className="px-4 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {broken ? (
+              <ShieldAlert className="w-6 h-6 text-rose-600 shrink-0" />
+            ) : (
+              <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <h2 className="font-bold text-base">
+                {broken
+                  ? `Tampering detected at event #${audit.firstInvalidSeq}`
+                  : `Audit chain verified · ${audit.length} events`}
+              </h2>
+              <p className="text-sm text-slate-600">
+                Tamper-evident: each event’s SHA-256 hash includes the previous one. The whole chain is re-verified on
+                every refresh.
+              </p>
+            </div>
+          </div>
+          <button
+            disabled={busy !== null}
+            onClick={handleTamper}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-2 border border-rose-400 text-rose-700 hover:bg-rose-50 rounded-md text-sm font-bold disabled:opacity-50"
+            title="Demo control: writes to the database directly, bypassing the application"
+          >
+            <DatabaseZap className="w-4 h-4" />
+            Edit a record directly in the database (demo)
+          </button>
         </div>
-        <button
-          disabled={busy !== null}
-          onClick={handleReset}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold disabled:opacity-50"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Reset Demo State
-        </button>
-      </div>
+
+        {tamper && broken && (
+          <p className="px-4 py-2 border-t border-amber-300 bg-amber-50 text-sm text-amber-950">
+            Direct database write on event <strong>#{tamper.tamperedSeq}</strong>: <span className="font-mono">{tamper.field}</span>{' '}
+            changed from <strong className="font-mono">{gbp(tamper.before)}</strong> to{' '}
+            <strong className="font-mono text-rose-700">{gbp(tamper.after)}</strong>. The stored hash was not touched.
+          </p>
+        )}
+
+        {broken && report && report.valid === false && (
+          <div className="px-4 py-2 border-t border-rose-300 bg-slate-900 text-slate-200 font-mono text-xs rounded-b-md space-y-0.5 overflow-x-auto">
+            <div>
+              <span className="text-rose-400">{report.reason}</span> at event #{report.firstInvalidSeq}
+            </div>
+            <div>
+              <span className="text-emerald-400">hash of the record as it is now </span> {report.expectedHash}
+            </div>
+            <div>
+              <span className="text-rose-400">hash stored when it was written </span> {report.storedHash}
+            </div>
+          </div>
+        )}
+      </section>
 
       {feedback && (
         <div
-          className={`px-4 py-3 rounded-xl text-sm font-medium border ${
-            feedback.type === 'error'
-              ? 'bg-rose-50 border-rose-200 text-rose-800'
-              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+            feedback.ok ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-rose-50 border-rose-300 text-rose-800'
           }`}
         >
           {feedback.text}
         </div>
       )}
 
-      {/* SECTION 1: TAMPER-EVIDENT AUDIT VERIFICATION */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            {state.audit.chainValid ? (
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            ) : (
-              <ShieldAlert className="w-5 h-5 text-rose-600" />
-            )}
-            <h3 className="font-bold text-base text-slate-900">
-              Tamper-Evident Audit Chain (SHA-256)
-            </h3>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <button
-              disabled={busy !== null}
-              onClick={handleVerify}
-              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              Verify Hash Chain
-            </button>
-            <button
-              disabled={busy !== null}
-              onClick={handleTamper}
-              className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold disabled:opacity-50"
-            >
-              <Skull className="w-4 h-4" />
-              Tamper DB (Demo Attack)
-            </button>
-          </div>
+      {/* 2 · LOG */}
+      <section>
+        <h2 className="font-bold text-base mb-1.5 flex items-center gap-2">
+          <ScrollText className="w-4 h-4" /> Audit log
+          <span className="font-normal text-xs text-slate-500">newest first</span>
+        </h2>
+        <div className="bg-white rounded-lg border border-slate-300 max-h-64 overflow-y-auto">
+          <table className="w-full text-left text-[13px]">
+            <thead className="sticky top-0 bg-slate-50">
+              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+                <th className="py-1.5 px-3">#</th>
+                <th className="py-1.5 px-3">Time</th>
+                <th className="py-1.5 px-3">Event</th>
+                <th className="py-1.5 px-3">Actor</th>
+                <th className="py-1.5 px-3">Recorded data</th>
+                <th className="py-1.5 px-3">Hash</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {log.map((ev) => {
+                const bad = broken && ev.seq === audit.firstInvalidSeq;
+                return (
+                  <tr key={ev.seq} className={bad ? 'bg-rose-100 text-rose-950 font-semibold' : ''}>
+                    <td className="py-1 px-3 font-mono font-bold">{ev.seq}</td>
+                    <td className="py-1 px-3 font-mono text-xs whitespace-nowrap">{clock(ev.occurredAt)}</td>
+                    <td className="py-1 px-3 whitespace-nowrap">
+                      <span className="font-mono text-xs font-bold">{ev.eventType}</span>
+                      <span className="text-slate-500 text-xs"> {payRef(ev.entityRef)}</span>
+                    </td>
+                    <td className="py-1 px-3 text-xs whitespace-nowrap">{ev.actor}</td>
+                    <td className="py-1 px-3 text-xs font-mono break-words">{compactPayload(ev.payload)}</td>
+                    <td className="py-1 px-3 font-mono text-xs whitespace-nowrap">
+                      {bad ? 'MISMATCH' : shortHash(ev.hash)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-
-        {tamperInfo && (
-          <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-300 text-xs text-amber-950">
-            <strong>Direct SQL Attack Executed on seq #{tamperInfo.tamperedSeq}:</strong> changed{' '}
-            <code className="font-mono">{tamperInfo.field}</code> from{' '}
-            <code className="font-mono font-bold">{tamperInfo.before}</code> to{' '}
-            <code className="font-mono font-bold text-rose-700">{tamperInfo.after}</code>.{' '}
-            {tamperInfo.note}
-          </div>
-        )}
-
-        {verifyResult && (
-          <div
-            className={`p-4 rounded-xl border-2 text-xs space-y-2 ${
-              verifyResult.valid
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                : 'bg-rose-50 border-rose-400 text-rose-950'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm flex items-center gap-1.5">
-                {verifyResult.valid ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    CHAIN INTEGRITY VERIFIED ({verifyResult.length} events)
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-4 h-4 text-rose-600" />
-                    TAMPERING DETECTED AT SEQ #{verifyResult.firstInvalidSeq} ({verifyResult.reason})
-                  </>
-                )}
-              </span>
-              <span className="font-mono text-[11px] opacity-75">
-                Checked {verifyResult.checkedAt?.slice(11, 19)} UTC
-              </span>
-            </div>
-
-            {!verifyResult.valid && (
-              <div className="bg-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[11px] space-y-1 overflow-x-auto">
-                <div>
-                  <span className="text-emerald-400">EXPECTED:</span> {verifyResult.expectedHash}
-                </div>
-                <div>
-                  <span className="text-rose-400">STORED  :</span> {verifyResult.storedHash}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </section>
 
-      {/* SECTION 2: LIVE PROGRAMMABLE RULES EDITOR */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-slate-700" />
-          <h3 className="font-bold text-base text-slate-900">Programmable Policy Rules</h3>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* 3 · RULES */}
+      <section>
+        <h2 className="font-bold text-base mb-1.5 flex items-center gap-2">
+          <Sliders className="w-4 h-4" /> Programmable rules
+          <span className="font-normal text-xs text-slate-500">
+            edited live · every change is versioned and written to the audit chain
+          </span>
+        </h2>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
           {state.rules.map((rule) => (
-            <div
-              key={rule.code}
-              className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between gap-3"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-mono text-[11px] font-bold text-slate-500">
-                    P{rule.priority} · {rule.code}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      rule.outcome === 'BLOCK'
-                        ? 'bg-rose-100 text-rose-800'
-                        : 'bg-amber-100 text-amber-900'
-                    }`}
-                  >
-                    {rule.outcome} · v{rule.version}
-                  </span>
-                </div>
-                <div className="font-bold text-sm text-slate-900">{rule.name}</div>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{rule.description}</p>
-              </div>
-
-              {rule.code === 'VELOCITY_UNVERIFIED' && (
-                <div className="pt-3 border-t border-slate-200 space-y-2">
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <label className="block">
-                      <span className="text-slate-500 block mb-1">Max Attempts</span>
-                      <input
-                        type="number"
-                        min={1}
-                        value={maxAttempts}
-                        onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white font-mono font-bold"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-slate-500 block mb-1">Window (min)</span>
-                      <input
-                        type="number"
-                        min={1}
-                        value={windowMinutes}
-                        onChange={(e) => setWindowMinutes(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white font-mono font-bold"
-                      />
-                    </label>
-                  </div>
-                  <button
-                    disabled={busy !== null}
-                    onClick={() =>
-                      handleSaveRule('VELOCITY_UNVERIFIED', { maxAttempts, windowMinutes })
-                    }
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Update Velocity Rule
-                  </button>
-                </div>
-              )}
-
-              {rule.code === 'NEW_BENEFICIARY_WALLET' && (
-                <div className="pt-3 border-t border-slate-200 space-y-2">
-                  <label className="block text-xs">
-                    <span className="text-slate-500 block mb-1">Escrow Hold (minutes)</span>
-                    <input
-                      type="number"
-                      min={1}
-                      value={holdMinutes}
-                      onChange={(e) => setHoldMinutes(Number(e.target.value))}
-                      className="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white font-mono font-bold"
-                    />
-                  </label>
-                  <button
-                    disabled={busy !== null}
-                    onClick={() => handleSaveRule('NEW_BENEFICIARY_WALLET', { holdMinutes })}
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Update Escrow Rule
-                  </button>
-                </div>
-              )}
-
-              {rule.code === 'RISK_LIST' && (
-                <div className="pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-                  Always enforced · Updated by <span className="font-mono">{rule.updatedBy}</span>
-                </div>
-              )}
-            </div>
+            <RuleCard
+              key={`${rule.code}-${rule.version}-${rule.updatedAt}`}
+              rule={rule}
+              busy={busy !== null}
+              onSave={handleSaveRule}
+            />
           ))}
         </div>
       </section>
 
-      {/* SECTION 3: DIGITAL TRUST REGISTRY (WALLETS) */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-slate-700" />
-            <h3 className="font-bold text-sm text-slate-900">Digital Trust Wallet Registry</h3>
-          </div>
-          <span className="text-xs text-slate-500">{state.wallets.length} wallets registered</span>
-        </div>
-
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-slate-200 text-slate-500 uppercase bg-slate-50/50">
-              <th className="py-2.5 px-4">Wallet Address</th>
-              <th className="py-2.5 px-4">Owner / Bank</th>
-              <th className="py-2.5 px-4">Trust Status</th>
-              <th className="py-2.5 px-4 text-right">Balance</th>
-              <th className="py-2.5 px-4">Notes</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {state.wallets.map((w) => (
-              <tr key={w.address} className="hover:bg-slate-50">
-                <td className="py-2.5 px-4 font-mono font-semibold text-slate-900">{w.address}</td>
-                <td className="py-2.5 px-4">
-                  <div className="font-medium text-slate-800">{w.ownerName}</div>
-                  <div className="text-[11px] text-slate-400">{w.bank}</div>
-                </td>
-                <td className="py-2.5 px-4">
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                      WALLET_BADGE[w.status] || 'bg-slate-100'
-                    }`}
-                  >
-                    {w.status}
-                  </span>
-                </td>
-                <td className="py-2.5 px-4 text-right font-mono font-bold">
-                  {formatGBP(w.balance)}
-                </td>
-                <td className="py-2.5 px-4 text-slate-500">
-                  {w.flagReason && <span className="text-rose-700 font-medium">{w.flagReason}</span>}
-                  {w.rotatedTo && <span>Rotated → {w.rotatedTo}</span>}
-                  {!w.flagReason && !w.rotatedTo && <span>{w.label}</span>}
-                </td>
+      {/* 4 · WALLETS */}
+      <section>
+        <h2 className="font-bold text-base mb-1.5 flex items-center gap-2">
+          <Wallet className="w-4 h-4" /> Wallet registry
+          <span className="font-normal text-xs text-slate-500">
+            every wallet has a key — that is what lets a supplier sign, and what a bank account cannot do
+          </span>
+        </h2>
+        <div className="bg-white rounded-lg border border-slate-300 overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500">
+                <th className="py-1.5 px-3">Wallet</th>
+                <th className="py-1.5 px-3">Owner · bank</th>
+                <th className="py-1.5 px-3">Public key</th>
+                <th className="py-1.5 px-3">Status</th>
+                <th className="py-1.5 px-3 text-right">Balance</th>
+                <th className="py-1.5 px-3">Notes</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {state.wallets.map((w) => (
+                <tr key={w.address}>
+                  <td className="py-1.5 px-3 font-mono font-bold text-[13px] whitespace-nowrap">{w.address}</td>
+                  <td className="py-1.5 px-3 leading-tight">
+                    {w.ownerName}
+                    <span className="block text-xs text-slate-400">{w.bank}</span>
+                  </td>
+                  <td className="py-1.5 px-3 font-mono text-xs whitespace-nowrap">{keyPrint(w.publicKey)}</td>
+                  <td className="py-1.5 px-3">
+                    <span className={`inline-block whitespace-nowrap px-2 py-0.5 rounded text-xs font-bold border ${WALLET_BADGE[w.status] || ''}`}>
+                      {WALLET_LABEL[w.status] || w.status}
+                    </span>
+                  </td>
+                  <td className="py-1.5 px-3 text-right font-mono font-bold">{gbp(w.balance)}</td>
+                  <td className="py-1.5 px-3 text-xs text-slate-600">
+                    {w.flagReason ? (
+                      <span className="text-rose-700 font-semibold">{w.flagReason}</span>
+                    ) : w.rotatedTo ? (
+                      `Replaced by ${w.rotatedTo}`
+                    ) : w.rotatedFrom ? (
+                      `Replaces ${w.rotatedFrom}`
+                    ) : (
+                      w.label
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
+    </div>
+  );
+}
+
+// Remounted (via key) whenever the rule changes on the server, so the inputs never show stale values after a reset.
+function RuleCard({ rule, busy, onSave }) {
+  const fields = RULE_FIELDS[rule.code] || [];
+  const [values, setValues] = useState(() => Object.fromEntries(fields.map((f) => [f.key, rule.params?.[f.key] ?? ''])));
+  const changed = fields.some((f) => String(values[f.key]) !== String(rule.params?.[f.key]));
+
+  return (
+    <div className="bg-white p-3 rounded-lg border border-slate-300 flex flex-col gap-2">
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-bold text-sm">
+            {rule.priority}. {rule.name}
+          </span>
+          <span
+            className={`text-xs font-bold px-2 py-0.5 rounded ${
+              rule.outcome === 'BLOCK' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'
+            }`}
+          >
+            {rule.outcome}
+          </span>
+        </div>
+        <p className="text-[13px] text-slate-600 leading-snug mt-0.5">{rule.description}</p>
+      </div>
+
+      {fields.length > 0 && (
+        <div className="flex items-end gap-2">
+          {fields.map((f) => (
+            <label key={f.key} className="flex-1 text-xs text-slate-500">
+              {f.label}
+              <input
+                type="number"
+                min={1}
+                value={values[f.key]}
+                onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                className="mt-0.5 w-full px-2 py-1 rounded border border-slate-300 font-mono font-bold text-sm text-slate-900"
+              />
+            </label>
+          ))}
+          <button
+            disabled={busy || !changed}
+            onClick={() => onSave(rule.code, Object.fromEntries(fields.map((f) => [f.key, Number(values[f.key])])))}
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-700 text-white rounded text-xs font-bold disabled:opacity-40"
+          >
+            <Save className="w-3.5 h-3.5" /> Save
+          </button>
+        </div>
+      )}
+
+      <div className="text-xs text-slate-500 font-mono mt-auto">
+        v{rule.version} · {rule.updatedBy} · {clock(rule.updatedAt)}
+      </div>
     </div>
   );
 }

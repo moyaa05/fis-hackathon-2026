@@ -4,6 +4,17 @@
 > **Alcance (v1.1, 25-nov 19:20):** solo Reino Unido: pagos B2B en depósitos tokenizados en libras entre bancos del Reino Unido. Pagos internacionales, SWIFT y otras jurisdicciones quedan como líneas futuras, fuera de la demo.
 > **Archivos hermanos:** `schema.sql` (DDL probado en PostgreSQL 16) · `mocks.json` (respuestas reales de cada endpoint, para Tomás) · `test-vectors.json` (vectores para JUnit) · `demo-keys.json` (claves Ed25519 sintéticas).
 > Todos los hashes y firmas de `mocks.json` y `test-vectors.json` son reales: se verificaron con Python `cryptography` y con el CLI de OpenSSL.
+>
+> **Cambios v1.2 (25-nov 23:30, tras la auditoría; ya en `main`):**
+> 1. `WalletView` añade `publicKey` (clave **pública** Ed25519, SPKI base64) para que la UI enseñe la huella de cada clave.
+> 2. `rotation-authorization` puede devolver además `409 ESCROW_EXPIRED` (firma recibida después de `expiresAt`) y `409 DESTINATION_FLAGGED` (el destino entró en la lista de riesgo mientras el pago estaba retenido; los fondos vuelven al vencer).
+> 3. `metrics.protectedAmount/Count` = pagos `BLOCKED` + `REVERTED`. Un `HELD` todavía no cuenta.
+> 4. Todos los errores, también los del framework (JSON mal formado, 404, 405, 415…), salen como problem+json con `code`. Nuevos códigos genéricos: `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE`, `INTERNAL_ERROR`.
+> 5. `supplierId` tiene que ser una empresa con rol `SUPPLIER`; si no, `404 UNKNOWN_SUPPLIER`.
+> 6. `/api/health` devuelve `headHash`, `chainValid` y `auditLength` (cabeza real de la cadena).
+> 7. `POST /api/demo/tamper` **sin body** es la forma recomendada: elige el último evento `FUNDS_*`, así funciona en cualquier punto de la demo.
+> 8. UI: el cuarto pago de la demo es Kestrel → `tdgb:orion:01` (`BLOCKED` por `RISK_LIST`). Repetir el pago "URGENT" de Acme tras el bloqueo también da `BLOCKED`.
+> 9. `scripts/matrix.py` automatiza T1–T17 y T19 (parte de T8 con un reset: en orden literal, T3+T5+T6+T8 superan el límite de velocidad de Acme).
 
 ---
 

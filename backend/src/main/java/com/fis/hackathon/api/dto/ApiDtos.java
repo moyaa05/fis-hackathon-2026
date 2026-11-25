@@ -31,7 +31,8 @@ public final class ApiDtos {
     public record WalletView(
             String address, String partyId, String ownerName, String bank,
             String status, String balance, boolean kybVerified, String label,
-            String flagReason, String rotatedFrom, String rotatedTo
+            String flagReason, String rotatedFrom, String rotatedTo,
+            String publicKey   // clave PUBLICA Ed25519 (SPKI base64): la UI ensena su huella; las privadas nunca salen de demo-keys.json
     ) {}
 
     public record PaymentView(
