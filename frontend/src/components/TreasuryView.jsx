@@ -37,6 +37,8 @@ const CHECK_STYLE = {
   HOLD: { icon: AlertTriangle, row: 'text-amber-950 bg-amber-50', badge: 'bg-amber-200 text-amber-900', iconCls: 'text-amber-600' },
   BLOCK: { icon: XCircle, row: 'text-rose-950 bg-rose-50', badge: 'bg-rose-200 text-rose-900', iconCls: 'text-rose-600' },
   SKIPPED: { icon: MinusCircle, row: 'text-slate-400', badge: 'bg-slate-200 text-slate-600', iconCls: 'text-slate-400' },
+  // the engine evaluates every rule; a hold under a block was evaluated but never applied
+  OVERRIDDEN: { icon: MinusCircle, row: 'text-slate-500', badge: 'bg-slate-200 text-slate-600', iconCls: 'text-slate-400' },
 };
 
 const BORDER = {
@@ -183,8 +185,13 @@ export default function TreasuryView({ state, selected, onSelect, onRefresh, onO
 
           <ul className="border-t border-slate-200 divide-y divide-slate-100">
             {selected.decision?.checks?.map((chk) => {
-              const s = CHECK_STYLE[chk.result] || CHECK_STYLE.PASS;
+              // Blocked outright: nothing was locked, so the escrow rule's "funds locked" text would be untrue.
+              const overridden = selected.decision.outcome === 'BLOCK' && chk.result === 'HOLD';
+              const s = overridden ? CHECK_STYLE.OVERRIDDEN : CHECK_STYLE[chk.result] || CHECK_STYLE.PASS;
               const Icon = s.icon;
+              const message = overridden
+                ? `${chk.message.split(' Funds locked in escrow')[0]} Not applied: the payment was blocked first, so nothing was held in escrow.`
+                : chk.message;
               return (
                 <li key={chk.code} className={`px-4 py-1.5 flex items-start gap-2.5 ${s.row}`}>
                   <Icon className={`w-[18px] h-[18px] mt-0.5 shrink-0 ${s.iconCls}`} />
@@ -193,9 +200,9 @@ export default function TreasuryView({ state, selected, onSelect, onRefresh, onO
                     <span className="block font-mono text-xs opacity-60 leading-tight">rule v{chk.ruleVersion}</span>
                   </div>
                   <span className={`shrink-0 w-[70px] text-center mt-0.5 px-1.5 py-0.5 rounded text-xs font-bold ${s.badge}`}>
-                    {chk.result}
+                    {overridden ? 'SKIPPED' : chk.result}
                   </span>
-                  <p className="text-sm leading-snug">{chk.message}</p>
+                  <p className="text-sm leading-snug">{message}</p>
                 </li>
               );
             })}
@@ -260,12 +267,12 @@ export default function TreasuryView({ state, selected, onSelect, onRefresh, onO
                   onClick={() => onSelect(p.id)}
                   className={`cursor-pointer ${selected?.id === p.id ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
                 >
-                  <td className="py-1.5 px-3 font-mono font-bold">{p.ref}</td>
+                  <td className="py-1.5 px-3 font-mono font-bold whitespace-nowrap">{p.ref}</td>
                   <td className="py-1.5 px-3">
-                    {p.supplierName} <span className="text-slate-400 text-xs">{p.invoiceRef}</span>
+                    {p.supplierName} <span className="text-slate-400 text-xs whitespace-nowrap">{p.invoiceRef}</span>
                   </td>
                   <td className="py-1.5 px-3">
-                    <span className="font-mono text-[13px]">{p.payeeWallet}</span>
+                    <span className="font-mono text-[13px] whitespace-nowrap">{p.payeeWallet}</span>
                     <span className="text-slate-400 text-xs"> · {p.payeeWalletOwner}</span>
                   </td>
                   <td className="py-1.5 px-3 text-right font-mono font-bold">{gbp(p.amount)}</td>
