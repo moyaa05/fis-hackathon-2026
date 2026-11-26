@@ -82,6 +82,17 @@ export default function App() {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // Presenter shortcuts: 1 / 2 / 3 switch tabs (ignored while typing in a field).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      const target = TABS[Number(e.key) - 1];
+      if (target) setTab(target.id);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // --- reset: two clicks, so a slip of the mouse cannot wipe the demo mid-pitch ---
   useEffect(() => {
     if (resetStep !== 'armed') return undefined;
@@ -148,33 +159,34 @@ export default function App() {
             <h1 className="font-bold text-lg leading-tight tracking-tight">
               KeyGuard GBPT
               {USE_MOCKS && (
-                <span className="ml-2 align-middle text-[11px] px-1.5 py-0.5 rounded bg-amber-400 text-slate-900 font-bold">
+                <span className="ml-2 align-middle text-xs px-1.5 py-0.5 rounded bg-amber-400 text-slate-900 font-bold">
                   MOCK DATA
                 </span>
               )}
             </h1>
             <p className={`text-xs truncate ${alarm ? 'text-rose-100' : 'text-slate-400'}`}>
-              Tokenised sterling deposits · prototype on a simulated network
+              Tokenised sterling deposits (GBPT) · simulated network
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 shrink-0">
           <Kpi label="Treasury balance" value={gbp(ledger.payerBalance)} />
           <Kpi label="Locked in escrow" value={gbp(ledger.inEscrow)} tone={alarm ? '' : 'text-amber-300'} />
           <Kpi
-            label={`Fraud prevented${metrics.protectedCount ? ` · ${metrics.protectedCount}` : ''}`}
+            label={`Funds protected${metrics.protectedCount ? ` · ${metrics.protectedCount}` : ''}`}
             value={gbp(metrics.protectedAmount)}
             tone={alarm ? '' : 'text-emerald-300'}
           />
           <div
-            className={`hidden xl:flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+            className={`hidden xl:flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border whitespace-nowrap ${
               ledgerBroken ? 'bg-white text-rose-700 border-white' : 'border-white/20 text-slate-200'
             }`}
             title="Treasury + suppliers + escrow must always equal the total supply"
           >
             <span className={`w-2 h-2 rounded-full ${ledgerBroken ? 'bg-rose-600' : 'bg-emerald-400'}`} />
-            {ledgerBroken ? 'Ledger mismatch' : `Ledger balanced · ${gbp(ledger.totalSupply)}`}
+            {ledgerBroken ? 'Ledger mismatch' : 'Ledger balanced'}
+            {!ledgerBroken && <span className="hidden 2xl:inline font-normal">· {gbp(ledger.totalSupply)}</span>}
           </div>
         </div>
 
@@ -258,6 +270,7 @@ export default function App() {
           {tab === 'supplier' && (
             <SupplierView
               state={state}
+              selectedId={selectedId}
               verification={verification}
               onVerification={setVerification}
               onSelectPayment={setSelectedId}
@@ -297,12 +310,12 @@ export default function App() {
                     <span className={`font-mono text-xs font-bold ${broken ? 'text-rose-700' : 'text-slate-500'}`}>
                       #{ev.seq}
                     </span>
-                    <span className="font-mono text-[11px] text-slate-400">{clock(ev.occurredAt)}</span>
+                    <span className="font-mono text-xs text-slate-400">{clock(ev.occurredAt)}</span>
                   </div>
                   <p className={`text-[13px] leading-snug ${broken ? 'text-rose-900 font-semibold' : 'text-slate-800'}`}>
                     {describeEvent(ev)}
                   </p>
-                  <p className={`font-mono text-[11px] ${broken ? 'text-rose-700 font-bold' : 'text-slate-400'}`}>
+                  <p className={`font-mono text-xs ${broken ? 'text-rose-700 font-bold' : 'text-slate-400'}`}>
                     {broken ? 'content no longer matches hash ' : ''}
                     {shortHash(ev.hash)}
                   </p>
@@ -316,10 +329,26 @@ export default function App() {
   );
 }
 
+// The number flashes for a moment whenever it changes, so the room sees the money move.
 function Kpi({ label, value, tone = '' }) {
+  const box = useRef(null);
+  const previous = useRef(value);
+
+  useEffect(() => {
+    if (previous.current === value) return;
+    previous.current = value;
+    box.current?.animate(
+      [
+        { backgroundColor: 'rgba(255,255,255,0.55)', transform: 'scale(1.08)' },
+        { backgroundColor: 'rgba(255,255,255,0)', transform: 'scale(1)' },
+      ],
+      { duration: 1400, easing: 'ease-out' },
+    );
+  }, [value]);
+
   return (
-    <div className="text-right">
-      <span className="block text-[11px] uppercase tracking-wide text-white/60 leading-tight">{label}</span>
+    <div ref={box} className="text-right rounded-md px-1.5 shrink-0">
+      <span className="block text-xs uppercase tracking-wide text-white/60 leading-tight whitespace-nowrap">{label}</span>
       <span className={`block font-mono font-bold text-lg leading-tight ${tone}`}>{value}</span>
     </div>
   );

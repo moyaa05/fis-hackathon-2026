@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, CheckCircle2, AlertTriangle, XCircle, MinusCircle, Clock, Send } from 'lucide-react';
+import { ArrowRight, CheckCircle2, AlertTriangle, XCircle, MinusCircle, Clock, Send, RotateCw } from 'lucide-react';
 import { api } from '../services/api';
 import { gbp, clock, timeLeft, STATUS_STYLE, STATUS_LABEL } from '../lib/format';
 
@@ -47,6 +47,15 @@ const BORDER = {
   REVERTED: 'border-l-slate-400',
 };
 
+// An invoice is paid once. While its payment is in escrow it waits; if the money came back, it can be tried again.
+const INVOICE = {
+  SETTLED: { label: 'Paid', tone: 'text-emerald-700', card: 'border-emerald-300 bg-emerald-50/60', retry: false },
+  RELEASED: { label: 'Paid', tone: 'text-emerald-700', card: 'border-emerald-300 bg-emerald-50/60', retry: false },
+  HELD: { label: 'Held', tone: 'text-amber-800', card: 'border-amber-400 bg-amber-50/60', retry: false },
+  BLOCKED: { label: 'Blocked', tone: 'text-rose-700', card: 'border-rose-300 bg-rose-50/60', retry: true },
+  REVERTED: { label: 'Returned', tone: 'text-slate-600', card: 'border-slate-300 bg-slate-50', retry: true },
+};
+
 const headline = (p) => {
   if (p.escrow?.resolution) return p.escrow.resolution.message;
   if (p.status === 'SETTLED') return 'Paid instantly: the destination is the supplier’s registered wallet. Zero friction.';
@@ -91,30 +100,53 @@ export default function TreasuryView({ state, selected, onSelect, onRefresh, onO
       <section>
         <div className="flex items-baseline justify-between mb-1.5">
           <h2 className="font-bold text-base">Payment run · invoices to pay</h2>
-          <span className="text-xs text-slate-500">Every payment passes the same three programmable rules</span>
+          <span className="text-xs text-slate-500">Each invoice is paid once · every payment passes the same three programmable rules</span>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {PAYMENT_RUN.map((item) => (
+          {PAYMENT_RUN.map((item) => {
+            // newest payment made for this invoice, if any (payments come newest first)
+            const last = state.payments.find(
+              (p) => p.invoiceRef === item.payload.invoiceRef && p.supplierId === item.payload.supplierId,
+            );
+            const inv = last ? INVOICE[last.status] : null;
+            const canPay = !inv || inv.retry;
+            return (
             <button
               key={item.id}
               disabled={busy !== null}
-              onClick={() => pay(item)}
-              className="group text-left bg-white rounded-lg border border-slate-300 hover:border-slate-900 hover:shadow px-3 py-2 transition disabled:opacity-50"
+              onClick={() => (canPay ? pay(item) : onSelect(last.id))}
+              title={canPay ? 'Send this payment' : `Show the decision for ${last.ref}`}
+              className={`group text-left rounded-lg border hover:border-slate-900 hover:shadow px-3 py-2 transition disabled:opacity-50 ${
+                inv ? inv.card : 'bg-white border-slate-300'
+              }`}
             >
-              <div className="font-bold text-sm truncate">{item.supplier}</div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-sm truncate">{item.supplier}</span>
+                {inv && (
+                  <span className={`shrink-0 text-xs font-bold uppercase tracking-wide ${inv.tone}`}>{inv.label}</span>
+                )}
+              </div>
               <div className="font-mono text-xs text-slate-700 truncate">→ {item.payload.payeeWallet}</div>
               <div className="text-xs text-slate-500 leading-snug h-8 overflow-hidden">{item.note}</div>
               <div className="mt-1 flex items-center justify-between">
                 <span className="font-mono font-bold text-[15px]">
                   {gbp(item.payload.amount)}
-                  <span className="hidden 2xl:inline ml-2 font-normal text-[11px] text-slate-400">{item.payload.invoiceRef}</span>
+                  <span className="hidden 2xl:inline ml-2 font-normal text-xs text-slate-400">{item.payload.invoiceRef}</span>
                 </span>
-                <span className="flex items-center gap-1 text-xs font-bold text-white bg-slate-900 group-hover:bg-slate-700 px-2.5 py-1 rounded">
-                  {busy === item.id ? 'Checking…' : 'Pay'} <Send className="w-3.5 h-3.5" />
-                </span>
+                {canPay ? (
+                  <span className="flex items-center gap-1 whitespace-nowrap text-xs font-bold text-white bg-slate-900 group-hover:bg-slate-700 px-2.5 py-1 rounded">
+                    {busy === item.id ? 'Checking…' : inv ? 'Pay again' : 'Pay'}
+                    {inv ? <RotateCw className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
+                  </span>
+                ) : (
+                  <span className="whitespace-nowrap font-mono text-xs font-bold text-slate-600 group-hover:underline">
+                    {last.ref} →
+                  </span>
+                )}
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
         {error && (
           <div className="mt-2 px-3 py-2 rounded-lg text-sm font-semibold bg-rose-50 border border-rose-300 text-rose-800">
@@ -158,7 +190,7 @@ export default function TreasuryView({ state, selected, onSelect, onRefresh, onO
                   <Icon className={`w-[18px] h-[18px] mt-0.5 shrink-0 ${s.iconCls}`} />
                   <div className="w-52 shrink-0">
                     <span className="font-bold text-sm">{chk.name}</span>
-                    <span className="block font-mono text-[11px] opacity-60 leading-tight">rule v{chk.ruleVersion}</span>
+                    <span className="block font-mono text-xs opacity-60 leading-tight">rule v{chk.ruleVersion}</span>
                   </div>
                   <span className={`shrink-0 w-[70px] text-center mt-0.5 px-1.5 py-0.5 rounded text-xs font-bold ${s.badge}`}>
                     {chk.result}

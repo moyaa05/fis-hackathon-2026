@@ -1,16 +1,31 @@
-# React + Vite
+# KeyGuard GBPT · frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite + Tailwind CSS v3. One screen, three tabs (one per actor) and an always-visible audit chain.
 
-Currently, two official plugins are available:
+| Tab | Who is acting | What it shows |
+|---|---|---|
+| Treasury | Northwind, the payer | Payment run, and for each payment the decision with the three rule checks |
+| Supplier side | The counterparty, outside the bank (simulated) | The challenge to sign, who signs it, and how the bank verifies the signature |
+| Compliance | The bank | Audit chain integrity, full audit log, programmable rules, wallet registry |
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run
 
-## React Compiler
+The demo is always opened through the gateway: **http://localhost:18080** (from the repo root: `docker compose up -d --build`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+For development with hot reload, with the stack already running:
 
-## Expanding the ESLint configuration
+```bash
+npm install
+npm run dev        # http://localhost:5173 — /api is proxied to the backend on :8081
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`VITE_USE_MOCKS=true npm run dev` renders canned data from `src/mocks/mocks.json` without a backend.
+
+## Where things are
+
+- `src/services/api.js` — every call to the API. Relative `/api/...` paths only.
+- `src/App.jsx` — 1 s polling of `GET /api/state`, top bar, alerts, tabs, audit chain. Keys `1` `2` `3` switch tabs.
+- `src/components/` — one file per tab.
+- `src/lib/format.js` — money (`en-GB`, GBP), times (`Europe/London`), key fingerprints, audit event summaries.
+
+Presenting: Chrome full screen (F11) at 150 % zoom on a 1080p display.

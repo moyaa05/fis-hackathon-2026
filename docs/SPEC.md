@@ -15,6 +15,10 @@
 > 7. `POST /api/demo/tamper` **sin body** es la forma recomendada: elige el último evento `FUNDS_*`, así funciona en cualquier punto de la demo.
 > 8. UI: el cuarto pago de la demo es Kestrel → `tdgb:orion:01` (`BLOCKED` por `RISK_LIST`). Repetir el pago "URGENT" de Acme tras el bloqueo también da `BLOCKED`.
 > 9. `scripts/matrix.py` automatiza T1–T17 y T19 (parte de T8 con un reset: en orden literal, T3+T5+T6+T8 superan el límite de velocidad de Acme).
+> 10. UI: cada factura del *payment run* se paga una vez. Con el pago en `SETTLED`/`RELEASED` la tarjeta queda en *Paid* y con `HELD` en *Held* (no se reenvían); con `BLOCKED`/`REVERTED` ofrece *Pay again*. Es una guarda de la interfaz: la API sigue aceptando otro pago con otra `Idempotency-Key` y lo decide con las mismas reglas.
+> 11. UI: el indicador de cabecera se llama *Funds protected* (antes *Fraud prevented*). Suma `BLOCKED` + `REVERTED`, y una devolución por vencimiento no es necesariamente un fraude.
+> 12. `scripts/preflight.py`: comprobación GO/NO-GO antes de la demo (contenedores, gateway, UI, smoke 20/20, matriz 26/26 y estado limpio tras el reset). Con `--quick` solo mira, sin crear pagos ni resetear.
+> 13. La ruta de la demo clic a clic, con cifras, planes B y orden de recorte, está en `docs/DEMO_RUNBOOK.md`. Manda sobre la tabla de §10 en los nombres de los botones: la UI final dice *Attacker · key of the new wallet*, *… · registered key* y *Nobody · skip to expiry*.
 
 ---
 

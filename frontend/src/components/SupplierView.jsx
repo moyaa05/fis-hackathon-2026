@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { KeyRound, ShieldCheck, ShieldAlert, FilePenLine, CheckCircle2, XCircle, MinusCircle, Clock } from 'lucide-react';
+import {
+  KeyRound,
+  ShieldCheck,
+  ShieldAlert,
+  FilePenLine,
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
+  Clock,
+  ChevronRight,
+  Hourglass,
+} from 'lucide-react';
 import { api } from '../services/api';
 import { gbp, keyPrint, timeLeft, STATUS_STYLE, STATUS_LABEL } from '../lib/format';
 
@@ -7,6 +18,7 @@ const PANEL = {
   RELEASED: 'border-emerald-500 bg-emerald-50',
   BLOCKED: 'border-rose-600 bg-rose-50',
   HELD: 'border-amber-500 bg-amber-50',
+  REVERTED: 'border-slate-400 bg-slate-50',
 };
 
 const SIGNER = {
@@ -15,25 +27,21 @@ const SIGNER = {
   TAMPERED: () => 'A registered-key signature over an altered challenge (destination swapped)',
 };
 
-export default function SupplierView({ state, verification, onVerification, onSelectPayment, onRefresh }) {
+export default function SupplierView({ state, selectedId, verification, onVerification, onSelectPayment, onRefresh }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
 
   const walletOf = Object.fromEntries(state.wallets.map((w) => [w.address, w]));
   const held = state.payments.filter((p) => p.status === 'HELD' && p.escrow);
   const resolved = state.payments.filter((p) => p.status !== 'HELD' && p.escrow);
+  // One request open at a time, so every option stays on screen: the one picked in Treasury, else the newest.
+  const open = held.find((p) => p.id === selectedId) || held[0] || null;
 
-  // Two separate calls on purpose: (1) someone outside the bank signs the challenge,
-  // (2) the bank receives only the signature and checks which key produced it.
-  const sign = async (payment, actor) => {
+  const run = async (key, action) => {
     try {
-      setBusy(`${payment.id}-${actor}`);
+      setBusy(key);
       setError(null);
-      const sim = await api.simSign(payment.id, actor);
-      const updated = await api.authorizeRotation(payment.id, sim.signature);
-      onVerification({ actor, before: payment, sim, updated });
-      onSelectPayment(payment.id);
-      await onRefresh();
+      await action();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -41,8 +49,28 @@ export default function SupplierView({ state, verification, onVerification, onSe
     }
   };
 
+  // Two separate calls on purpose: (1) someone outside the bank signs the challenge,
+  // (2) the bank receives only the signature and checks which key produced it.
+  const sign = (payment, actor) =>
+    run(`${payment.id}-${actor}`, async () => {
+      const sim = await api.simSign(payment.id, actor);
+      const updated = await api.authorizeRotation(payment.id, sim.signature);
+      onVerification({ actor, before: payment, sim, updated });
+      onSelectPayment(payment.id);
+      await onRefresh();
+    });
+
+  // Nobody signs: the escrow window ends and the money goes back on its own (demo control jumps to that moment).
+  const letExpire = (payment) =>
+    run(`${payment.id}-NOBODY`, async () => {
+      const updated = await api.expirePayment(payment.id);
+      onVerification({ actor: 'NOBODY', before: payment, updated });
+      onSelectPayment(payment.id);
+      await onRefresh();
+    });
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
         <h2 className="font-bold text-base">Wallet changes waiting for the supplier’s signature</h2>
         <p className="text-xs text-slate-500">
@@ -64,10 +92,26 @@ export default function SupplierView({ state, verification, onVerification, onSe
         </div>
       )}
 
-      {held.map((p) => {
-        const requested = walletOf[p.escrow.requestedWallet];
-        const trusted = walletOf[p.escrow.trustedWallet];
-        return (
+      {held.map((p) =>
+        p.id !== open?.id ? (
+          <button
+            key={p.id}
+            onClick={() => onSelectPayment(p.id)}
+            className="w-full text-left bg-white rounded-lg border border-amber-300 hover:border-amber-500 px-4 py-2 flex items-center justify-between gap-3"
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <ChevronRight className="w-4 h-4 text-amber-700 shrink-0" />
+              <span className="font-bold shrink-0">{p.ref}</span>
+              <span className="truncate text-slate-700">
+                {p.supplierName} → <span className="font-mono text-sm">{p.escrow.requestedWallet}</span>
+              </span>
+            </span>
+            <span className="flex items-center gap-3 shrink-0">
+              <span className="font-mono text-sm text-amber-900">{timeLeft(p.escrow.expiresAt, state.serverTime)}</span>
+              <span className="font-mono font-bold">{gbp(p.amount)}</span>
+            </span>
+          </button>
+        ) : (
           <section key={p.id} className="bg-white rounded-lg border-2 border-amber-400 shadow-sm">
             <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 rounded-t-lg flex items-center justify-between gap-3">
               <span className="flex items-center gap-2 min-w-0">
@@ -93,7 +137,7 @@ export default function SupplierView({ state, verification, onVerification, onSe
                   </span>
                   <span className="block font-mono font-bold text-[15px]">{p.escrow.trustedWallet}</span>
                   <span className="block text-xs text-slate-600">
-                    {trusted?.label || p.supplierName} · key{' '}
+                    {walletOf[p.escrow.trustedWallet]?.label || p.supplierName} · key{' '}
                     <span className="font-mono font-bold">{keyPrint(p.escrow.trustedPublicKey)}</span>
                   </span>
                 </div>
@@ -105,27 +149,16 @@ export default function SupplierView({ state, verification, onVerification, onSe
                   <span className="block text-xs text-slate-600">
                     {p.payeeWalletOwner}
                     {p.payeeKybVerified ? ' · KYB verified' : ''} · key{' '}
-                    <span className="font-mono font-bold">{keyPrint(requested?.publicKey)}</span>
+                    <span className="font-mono font-bold">{keyPrint(walletOf[p.escrow.requestedWallet]?.publicKey)}</span>
                   </span>
                 </div>
               </div>
 
-              <div>
-                <span className="block text-xs font-bold text-slate-600 mb-1">
-                  Challenge to sign · bound to this payment, destination, amount and expiry (a signature cannot be reused)
-                </span>
-                <pre className="columns-2 gap-6 bg-slate-900 text-emerald-300 px-3 py-2 rounded-md text-xs font-mono leading-relaxed">
-                  {p.escrow.challenge}
-                </pre>
-              </div>
-
               {p.escrow.attempts?.length > 0 && (
-                <p className="text-sm text-rose-800 font-semibold">
-                  {p.escrow.attempts.at(-1).message}
-                </p>
+                <p className="text-sm text-rose-800 font-semibold">{p.escrow.attempts.at(-1).message}</p>
               )}
 
-              <div className="flex flex-wrap items-center gap-2 pt-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-bold text-slate-600 mr-1">Who signs?</span>
                 <button
                   disabled={busy !== null}
@@ -151,12 +184,30 @@ export default function SupplierView({ state, verification, onVerification, onSe
                   <FilePenLine className="w-4 h-4" />
                   Altered challenge
                 </button>
+                <button
+                  disabled={busy !== null}
+                  onClick={() => letExpire(p)}
+                  className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-slate-400 text-slate-700 hover:bg-slate-100 rounded-md text-sm font-semibold disabled:opacity-50"
+                  title="Demo control: jump to the end of the escrow window"
+                >
+                  <Hourglass className="w-4 h-4" />
+                  Nobody · skip to expiry
+                </button>
                 {busy?.startsWith(`${p.id}-`) && <span className="text-sm text-slate-500">Verifying…</span>}
+              </div>
+
+              <div>
+                <span className="block text-xs font-bold text-slate-600 mb-1">
+                  What gets signed · the challenge is bound to this payment, destination, amount and expiry, so a signature cannot be reused
+                </span>
+                <pre className="columns-2 gap-6 bg-slate-900 text-emerald-300 px-3 py-2 rounded-md text-xs font-mono leading-relaxed">
+                  {p.escrow.challenge}
+                </pre>
               </div>
             </div>
           </section>
-        );
-      })}
+        ),
+      )}
 
       {resolved.length > 0 && (
         <section>
@@ -181,12 +232,31 @@ export default function SupplierView({ state, verification, onVerification, onSe
   );
 }
 
-// What the bank did with the signature it received: the two questions that decide everything.
+// What the bank did with what it received: the two questions that decide everything.
 function Verification({ v }) {
+  const chip = (
+    <span className={`shrink-0 px-3 py-1 rounded-md text-sm font-extrabold border ${STATUS_STYLE[v.updated.status] || ''}`}>
+      {STATUS_LABEL[v.updated.status] || v.updated.status}
+    </span>
+  );
+
+  if (v.actor === 'NOBODY') {
+    return (
+      <section className={`rounded-lg border-2 ${PANEL[v.updated.status] || PANEL.REVERTED}`}>
+        <div className="px-4 py-2 flex items-center justify-between gap-3 border-b border-black/10">
+          <span className="font-bold">
+            Escrow window ended · {v.before.ref}
+            <span className="font-normal text-slate-600"> · no signature arrived</span>
+          </span>
+          {chip}
+        </div>
+        <p className="px-4 py-2.5 text-base font-bold leading-snug">{v.updated.escrow?.resolution?.message}</p>
+      </section>
+    );
+  }
+
   const attempt = v.updated.escrow?.attempts?.at(-1);
   const result = attempt?.result; // VALID | SELF_AUTHORISATION | INVALID
-  const registeredKey = v.before.escrow.trustedPublicKey;
-  const signingKey = v.sim.signerPublicKey;
   const signatureOk = result !== 'INVALID';
   const keyOk = result === 'VALID';
 
@@ -197,9 +267,7 @@ function Verification({ v }) {
           Bank verification · {v.before.ref}
           <span className="font-normal text-slate-600"> · signed by: {SIGNER[v.actor]?.(v)}</span>
         </span>
-        <span className={`shrink-0 px-3 py-1 rounded-md text-sm font-extrabold border ${STATUS_STYLE[v.updated.status] || ''}`}>
-          {STATUS_LABEL[v.updated.status] || v.updated.status}
-        </span>
+        {chip}
       </div>
 
       <div className="px-4 py-2.5 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
@@ -210,8 +278,8 @@ function Verification({ v }) {
           {!signatureOk && 'Not reached.'}
           {signatureOk && (
             <>
-              registered <span className="font-mono font-bold">{keyPrint(registeredKey)}</span> · signed with{' '}
-              <span className="font-mono font-bold">{keyPrint(signingKey)}</span> →{' '}
+              registered <span className="font-mono font-bold">{keyPrint(v.before.escrow.trustedPublicKey)}</span> · signed
+              with <span className="font-mono font-bold">{keyPrint(v.sim.signerPublicKey)}</span> →{' '}
               <strong>{keyOk ? 'same key' : 'a different key'}</strong>
             </>
           )}
