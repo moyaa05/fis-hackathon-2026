@@ -2,7 +2,7 @@
 
 Para quien lleva el ratón. Unos 2:15 de los 5:00 del pitch.
 
-Esta ruta está comprobada clic a clic contra el backend real con un navegador automatizado, a 1280×720, 1280×633 y 1920×1080: todos los botones quedan a la vista sin hacer scroll, las cifras de abajo son las que salen y no hay ninguna respuesta de error. Lo que **no** está comprobado es el proyector de la sala: hay que ensayarlo allí una vez.
+Esta ruta está comprobada clic a clic de dos maneras. En una réplica, con un navegador automatizado y la tipografía del portátil de la demo, a 1024×768, 1280×633, 1280×720, 1366×768 y 1920×1080. Y en el propio portátil de la demo, a través de nginx, a 1280×720 (26-nov, 00:44). En todos los casos los botones quedan a la vista sin hacer scroll, las cifras de abajo son las que salen y no hay ninguna respuesta de error. Lo que **no** está comprobado es el proyector de la sala: hay que ensayarlo allí una vez.
 
 ## 1. Antes de salir
 
@@ -51,7 +51,7 @@ Frases de apoyo, una por paso (en inglés, el jurado es de Londres):
 
 1. "A known supplier, its registered wallet. Settled at once, no friction."
 2. "Same supplier, a verified company, an urgent email. But this is not Acme's registered wallet. The money leaves treasury and stops in escrow."
-3. "The attacker controls the new wallet, so he signs. The signature is mathematically valid. It is simply the wrong key. A wallet cannot authorise itself: blocked, money back, wallet on the risk list."
+3. "The attacker controls the new wallet and signs with its key. The signature is mathematically valid. It is simply the wrong key. A wallet cannot authorise itself: blocked, money back, wallet on the risk list."
 4. "When Acme really moves bank, it signs with the key it already holds. Released, and the new wallet becomes the registered one."
 5. "If nobody signs, the escrow expires and the money comes back on its own."
 6. "Every step is hash-chained. Someone edits one amount directly in the database, and the system flags it within a second."
@@ -61,6 +61,7 @@ Variante del paso 6 con más efecto, solo si está ensayada: dejar la pantalla e
 ## 3. Lo que no se hace en directo
 
 - **Clics rápidos.** El gateway corta más de 5 escrituras por segundo desde la misma IP (respuesta 429). Medido en el portátil de la demo: 16 clics en 2 segundos, dos rechazados. A ritmo normal no aparece nunca.
+- **Pulsar *Pay again* dentro de la ruta.** El indicador *Funds protected* cuenta pagos bloqueados o devueltos, no facturas: con el reintento de la URGENT pasa de £95,000.00 a £175,000.00. Sirve para el Q&A, no para la ruta.
 - **Tocar las reglas** en Compliance, salvo que lo pidan en el Q&A. Cambian de versión y hay que reiniciar después.
 - **Escribir en un campo y usar las teclas 1/2/3.** Con el foco en un campo, las teclas escriben; los atajos solo funcionan fuera.
 - **Abrir la demo en dos portátiles contra el mismo backend.** Un reset de uno le cambia el estado al otro.
